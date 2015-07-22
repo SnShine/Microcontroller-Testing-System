@@ -2,13 +2,18 @@
 Configuration Task
 ==================
 
-Takes a video as input and generates .obj file as output which contains
+Takes a video as input and generates / saves to disk an object file as output which contains
 all the configuration information.
+
+This configuration and features are used in the next task, ImageProcessingTask to track 
+the microcontroller and detect LEDs
+
+
 '''
 
 import numpy as np
 import cv2
-# import json
+import json, pickle
 import video
 from collections import namedtuple
 # import common
@@ -70,11 +75,12 @@ flann_params= dict(algorithm = FLANN_INDEX_LSH,
                    key_size = 12,     # 20
                    multi_probe_level = 1) #2
 
-PlanarTarget = namedtuple('PlaneTarget', 'rect, keypoints, descrs, data')
+PlanarTarget = namedtuple('PlanarTarget', 'rect, keypoints, descrs, data')
 
 class FeatureDetector:
-    def __init__(self):
+    def __init__(self, callback):
         self.detector = cv2.ORB( nfeatures = 1000)
+        self.callback= callback
         self.matcher = cv2.FlannBasedMatcher(flann_params, {})
         self.targets = []
 
@@ -82,16 +88,21 @@ class FeatureDetector:
         '''Add a new tracking target.'''
         x0, y0, x1, y1 = rect
         raw_points, raw_descrs = self.detect_features(image)
+
         points, descs = [], []
+
         for kp, desc in zip(raw_points, raw_descrs):
             x, y = kp.pt
             if x0 <= x <= x1 and y0 <= y <= y1:
                 points.append(kp)
                 descs.append(desc)
-        descs = np.uint8(descs)
-        self.matcher.add([descs])
-        target = PlanarTarget(rect=rect, keypoints = points, descrs=descs, data=None)
-        self.targets.append(target)
+
+        self.callback(raw_points, raw_descrs, rect)
+
+        # descs = np.uint8(descs)
+        # self.matcher.add([descs])
+        # target = PlanarTarget(rect=rect, keypoints = points, descrs=descs, data=None)
+        # self.targets.append(target)
 
     def detect_features(self, frame):
         '''detect_features(self, frame) -> keypoints, descrs'''
@@ -110,7 +121,7 @@ class ConfigApp:
 
         cv2.namedWindow('plane')
         self.rect_sel = RectSelector('plane')
-        self.feat_det= FeatureDetector()
+        self.feat_det= FeatureDetector(self.save_object_file)
 
     def run(self):
         while True:
@@ -135,18 +146,26 @@ class ConfigApp:
             if ch == ord('s'):
                 #save to .obj file
                 for rect in self.rect_sel.rectangles:
-                    self.feat_det.add_target(self.frame, rect)
-                self.save_object_file(self.feat_det.matcher, self.feat_det.targets, self.rect_sel.rectangles)
+                    self.feat_det.add_target(self.frame, rect, )
+                
             if ch == 27:
                 break
 
-    def save_object_file(self, matcher, targets, rectangles):
+    def save_object_file(self, points, descrs, rect):
         file_object=  open("outputFile", "wb")
-        # print(matcher, targets, rectangles)
-        rectangles.save("abc.xml")
+        print(type(points), type(descrs), type(rect))
+
+        index= []
+        for point in points:
+            temp= (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
+            index.append(temp)
+
+        pickle.dump([index, descrs, rect], file_object)
+        file_object.close()
 
 if __name__ == '__main__':
     print __doc__
+    #PlanarTarget = namedtuple('PlaneTarget', 'rect, keypoints, descrs, data')
 
     import sys
     try: video_src = sys.argv[1]
