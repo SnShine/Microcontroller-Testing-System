@@ -8,12 +8,19 @@ all the configuration information.
 This configuration and features are used in the next task, ImageProcessingTask to track 
 the microcontroller and detect LEDs
 
+Usage:
+        ConfigTask.py [<video_source>]
 
+Keys:
+        <Space Bar> - Pause the video
+        c           - Clear all the marked ROI rectangles
+        s           - Save the configuration file to the disk
+        <Esc>       - Stop the program
 '''
 
 import numpy as np
 import cv2
-import json, pickle
+import pickle
 import video
 from collections import namedtuple
 # import common
@@ -49,7 +56,7 @@ class RectSelector:
         x0, y0, x1, y1= self.drag_rect
         if self.tx0== x0 and self.ty0== y0 and self.tx1== x1 and self.ty1== y1:
             self.counter+= 1
-            if self.counter== 200 and [x0,y0,x1,y1] not in self.rectangles:
+            if self.counter== 150 and [x0,y0,x1,y1] not in self.rectangles:
                 self.rectangles.append([x0,y0,x1,y1])
                 print("Added the rectangle with ("+str(x0)+","+str(y0)+"), ("+str(x1)+","+str(y1)+") as diagonal points to 'Region Of Interest!'")
                 self.counter= 0
@@ -69,11 +76,7 @@ class RectSelector:
         return self.drag_rect is not None
 
 
-FLANN_INDEX_LSH    = 6
-flann_params= dict(algorithm = FLANN_INDEX_LSH,
-                   table_number = 6, # 12
-                   key_size = 12,     # 20
-                   multi_probe_level = 1) #2
+
 
 PlanarTarget = namedtuple('PlanarTarget', 'rect, keypoints, descrs, data')
 
@@ -81,8 +84,7 @@ class FeatureDetector:
     def __init__(self, callback):
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
-        self.matcher = cv2.FlannBasedMatcher(flann_params, {})
-        self.targets = []
+        #self.targets = []
 
     def add_target(self, image, rect, data=None):
         '''Add a new tracking target.'''
@@ -97,7 +99,7 @@ class FeatureDetector:
                 points.append(kp)
                 descs.append(desc)
 
-        self.callback(raw_points, raw_descrs, rect)
+        self.callback(points, descs, rect)
 
         # descs = np.uint8(descs)
         # self.matcher.add([descs])
@@ -151,22 +153,20 @@ class ConfigApp:
             if ch == 27:
                 break
 
-    def save_object_file(self, points, descrs, rect):
+    def save_object_file(self, points, descs, rect):
         file_object=  open("outputFile", "wb")
-        print(type(points), type(descrs), type(rect))
+        print(type(points), type(descs), type(rect))
 
         index= []
         for point in points:
             temp= (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
             index.append(temp)
 
-        pickle.dump([index, descrs, rect], file_object)
+        pickle.dump([index, descs, rect], file_object)
         file_object.close()
 
 if __name__ == '__main__':
     print __doc__
-    #PlanarTarget = namedtuple('PlaneTarget', 'rect, keypoints, descrs, data')
-
     import sys
     try: video_src = sys.argv[1]
     except: video_src = 0
