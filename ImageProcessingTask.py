@@ -52,18 +52,22 @@ class PlaneTracker:
 
     def load_data(self, file_name, data=None):
         input_file= open(file_name, "r")
-        [index, descs, rect]= pickle.load(input_file)
-        #print(index, descs, rect)
+        [all_index, all_rects_descs, all_rects]= pickle.load(input_file)
 
-        points= []
-        for point in index:
-            temp = cv2.KeyPoint(x=point[0][0],y=point[0][1],_size=point[1], _angle=point[2], _response=point[3], _octave=point[4], _class_id=point[5])
-            points.append(temp)
+        for i in range(len(all_rects)):
+            index= all_index[i]
+            descs= all_rects_descs[i]
+            rect= all_rects[i]
 
-        descs = np.uint8(descs)
-        self.matcher.add([descs])
-        target = PlanarTarget(rect=rect, keypoints = points, descrs=descs, data=None)
-        self.targets.append(target)
+            points= []
+            for point in index:
+                temp = cv2.KeyPoint(x=point[0][0],y=point[0][1],_size=point[1], _angle=point[2], _response=point[3], _octave=point[4], _class_id=point[5])
+                points.append(temp)
+
+            descs = np.uint8(descs)
+            self.matcher.add([descs])
+            target = PlanarTarget(rect=rect, keypoints = points, descrs=descs, data=None)
+            self.targets.append(target)
 
 
     def track(self, frame):
