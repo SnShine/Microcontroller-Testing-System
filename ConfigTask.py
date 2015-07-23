@@ -33,6 +33,7 @@ class RectSelector:
         self.drag_rect = None
         self.rectangles= []
         self.circles= []
+        self.cNames= []
         self.tx0,self.ty0,self.tx1,self.ty1= 0,0,0,0
         self.counter= 0
     def onmouse(self, event, x, y, flags, param):
@@ -53,15 +54,18 @@ class RectSelector:
         if event== cv2.EVENT_LBUTTONDBLCLK:
             x, y = np.int16([x, y])
             self.circles.append([x, y])
+            tempName= "LED: "+ str(len(self.circles))
+            self.cNames.append(tempName)
 
     def draw(self, vis):
         if not self.drag_rect:
             for rect in self.rectangles:
                 x0,y0,x1,y1= rect
                 cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
-            for circle in self.circles:
-                x, y= circle
+            for i in range(len(self.circles)):
+                x, y= self.circles[i]
                 cv2.circle(vis, (x, y), 7, (255,0,0), 2)
+                cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
             return False
 
         x0, y0, x1, y1= self.drag_rect
@@ -81,9 +85,10 @@ class RectSelector:
         for rect in self.rectangles:
             x0,y0,x1,y1= rect
             cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
-        for circle in self.circles:
-            x, y= circle
+        for i in range(len(self.circles)):
+            x, y= self.circles[i]
             cv2.circle(vis, (x, y), 7, (255,0,0), 2)
+            cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
         return True
     @property
@@ -99,27 +104,26 @@ class FeatureDetector:
     def __init__(self, callback):
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
-        #self.targets = []
 
-    def add_target(self, image, rect, data=None):
-        '''Add a new tracking target.'''
-        x0, y0, x1, y1 = rect
-        raw_points, raw_descrs = self.detect_features(image)
+    def extract_features(self, image, rects, data=None):
+        all_rects_points, all_rects_descs, all_rects= [], [], rects
+        for rect in rects:
+            x0, y0, x1, y1 = rect
+            raw_points, raw_descrs = self.detect_features(image)
 
-        points, descs = [], []
+            points, descs = [], []
 
-        for kp, desc in zip(raw_points, raw_descrs):
-            x, y = kp.pt
-            if x0 <= x <= x1 and y0 <= y <= y1:
-                points.append(kp)
-                descs.append(desc)
+            for kp, desc in zip(raw_points, raw_descrs):
+                x, y = kp.pt
+                if x0 <= x <= x1 and y0 <= y <= y1:
+                    points.append(kp)
+                    descs.append(desc)
 
-        self.callback(points, descs, rect)
+            all_rects_points.append(points)
+            all_rects_descs.append(descs)
 
-        # descs = np.uint8(descs)
-        # self.matcher.add([descs])
-        # target = PlanarTarget(rect=rect, keypoints = points, descrs=descs, data=None)
-        # self.targets.append(target)
+        self.callback(all_rects_points, all_rects_descs, all_rects)
+
 
     def detect_features(self, frame):
         '''detect_features(self, frame) -> keypoints, descrs'''
@@ -138,7 +142,7 @@ class ConfigApp:
 
         cv2.namedWindow('plane')
         self.rect_sel = RectSelector('plane')
-        self.feat_det= FeatureDetector(self.save_object_file)
+        self.feat_det= FeatureDetector(self.save_data)
 
     def run(self):
         while True:
@@ -163,22 +167,23 @@ class ConfigApp:
                 print("Cleared all marked Rectangles & Circles from 'Region Of Interest'!")
             if ch == ord('s'):
                 #save to .obj file
-                for rect in self.rect_sel.rectangles:
-                    self.feat_det.add_target(self.frame, rect)  #need to change this function as it finally pickles only one rectangle
-                
+                self.feat_det.extract_features(self.frame, self.rect_sel.rectangles)                  
             if ch == 27:
                 break
 
-    def save_object_file(self, points, descs, rect):
+    def save_data(self, all_rects_points, all_rects_descs, all_rects):
         file_object=  open("outputFile", "wb")
-        print(type(points), type(descs), type(rect))
+        #print(type(points), type(descs), type(rect))
+        all_index= []
 
-        index= []
-        for point in points:
-            temp= (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
-            index.append(temp)
+        for points in all_rects_points:
+            index= []
+            for point in points:
+                temp= (point.pt, point.size, point.angle, point.response, point.octave, point.class_id)
+                index.append(temp)
+            all_index.append(index)
 
-        pickle.dump([index, descs, rect], file_object)
+        pickle.dump([all_index, all_rects_descs, all_rects], file_object)
         file_object.close()
 
 if __name__ == '__main__':
