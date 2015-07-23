@@ -32,6 +32,7 @@ class RectSelector:
         self.drag_start = None
         self.drag_rect = None
         self.rectangles= []
+        self.circles= []
         self.tx0,self.ty0,self.tx1,self.ty1= 0,0,0,0
         self.counter= 0
     def onmouse(self, event, x, y, flags, param):
@@ -49,14 +50,25 @@ class RectSelector:
                 if x1-x0 > 0 and y1-y0 > 0:
                     self.drag_rect = (x0, y0, x1, y1)
                     #self.rectangles.append([x0, y0, x1, y1])
+        if event== cv2.EVENT_LBUTTONDBLCLK:
+            x, y = np.int16([x, y])
+            self.circles.append([x, y])
+
     def draw(self, vis):
         if not self.drag_rect:
+            for rect in self.rectangles:
+                x0,y0,x1,y1= rect
+                cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
+            for circle in self.circles:
+                x, y= circle
+                cv2.circle(vis, (x, y), 7, (255,0,0), 2)
             return False
 
         x0, y0, x1, y1= self.drag_rect
         if self.tx0== x0 and self.ty0== y0 and self.tx1== x1 and self.ty1== y1:
             self.counter+= 1
             if self.counter== 150 and [x0,y0,x1,y1] not in self.rectangles:
+                # Rectangle i sappended as ROI if it is unchanged for 150 frames (not in dragging position)
                 self.rectangles.append([x0,y0,x1,y1])
                 print("Added the rectangle with ("+str(x0)+","+str(y0)+"), ("+str(x1)+","+str(y1)+") as diagonal points to 'Region Of Interest!'")
                 self.counter= 0
@@ -69,6 +81,9 @@ class RectSelector:
         for rect in self.rectangles:
             x0,y0,x1,y1= rect
             cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
+        for circle in self.circles:
+            x, y= circle
+            cv2.circle(vis, (x, y), 7, (255,0,0), 2)
 
         return True
     @property
@@ -144,11 +159,12 @@ class ConfigApp:
                 self.paused = not self.paused
             if ch == ord('c'):
                 self.rect_sel.rectangles= []
-                print("Cleared all marked Rectangles from 'Region Of Interest'!")
+                self.rect_sel.circles= []
+                print("Cleared all marked Rectangles & Circles from 'Region Of Interest'!")
             if ch == ord('s'):
                 #save to .obj file
                 for rect in self.rect_sel.rectangles:
-                    self.feat_det.add_target(self.frame, rect, )
+                    self.feat_det.add_target(self.frame, rect)  #need to change this function as it finally pickles only one rectangle
                 
             if ch == 27:
                 break
