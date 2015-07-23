@@ -185,6 +185,7 @@ class ConfigApp:
 
         pickle.dump([all_index, all_rects_descs, all_rects], file_object)
         file_object.close()
+        print("Successfully saved selected ROIs to 'outputFile'")
 
 if __name__ == '__main__':
     print __doc__
