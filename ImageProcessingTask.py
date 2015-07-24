@@ -8,6 +8,9 @@ Usage:
 Keys:
         <Space Bar> - Pause the video
         <Esc>       - Stop the program
+
+------------------------------------------------------------------------------------
+
 '''
 
 import numpy as np
@@ -159,12 +162,14 @@ class ImageProcessionApp:
 if __name__ == '__main__':
     print __doc__
     import sys
+    
     got_arg= False
     try:
         file_name= sys.argv[1]
         got_arg= True
     except:
         print("ERROR: Need to provide path to object file. See the usage below:\nUsage:\n\tImageProcessingTask.py <saved/object/file> [<video_source>]")
+    
     try: 
         video_src = sys.argv[2]
     except: 
@@ -172,5 +177,3 @@ if __name__ == '__main__':
     
     if got_arg:
         ImageProcessionApp(file_name, video_src).run()
-    else:
-        pass

@@ -16,6 +16,9 @@ Keys:
         c           - Clear all the marked ROI rectangles
         s           - Save the configuration file to the disk
         <Esc>       - Stop the program
+
+------------------------------------------------------------------------------------
+
 '''
 
 import numpy as np
@@ -25,10 +28,13 @@ import video
 from collections import namedtuple
 # import common
 
-class RectSelector:
-    def __init__(self, win):
+class ROIselector:
+    def __init__(self, win, ROI_type):
         self.win = win
-        cv2.setMouseCallback(win, self.onmouse)
+        if ROI_type== 0:
+            cv2.setMouseCallback(win, self.rect_circ)
+        elif ROI_type== 1:
+            cv2.setMouseCallback(win, self.poly_circ)
         self.drag_start = None
         self.drag_rect = None
         self.rectangles= []
@@ -36,7 +42,7 @@ class RectSelector:
         self.cNames= []
         self.tx0,self.ty0,self.tx1,self.ty1= 0,0,0,0
         self.counter= 0
-    def onmouse(self, event, x, y, flags, param):
+    def rect_circ(self, event, x, y, flags, param):
         x, y = np.int16([x, y]) # BUG
         #ch = cv2.waitKey(1)
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -67,6 +73,7 @@ class RectSelector:
                 x, y= self.circles[i]
                 cv2.circle(vis, (x, y), 7, (255,0,0), 2)
                 cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
+            #code to draw polygon goes here
             return False
 
         x0, y0, x1, y1= self.drag_rect
@@ -136,14 +143,14 @@ class FeatureDetector:
 
 
 class ConfigApp:
-    def __init__(self, src):
+    def __init__(self, src, ROI_type):
         self.cap = video.create_capture(src)
         self.frame = None
         self.paused = False
         #self.tracker = PlaneTracker()
 
         cv2.namedWindow('plane')
-        self.rect_sel = RectSelector('plane')
+        self.rect_sel = ROIselector('plane', ROI_type)
         self.feat_det= FeatureDetector(self.save_data)
 
     def run(self, user_x, user_y):
@@ -201,10 +208,35 @@ class ConfigApp:
 if __name__ == '__main__':
     print __doc__
     import sys
-    try: video_src = sys.argv[1]
-    except: video_src = 0
-    print("Required resolution of the video(Enter two space seperated integers like \n'720 480' without quotes)\n")
-    a= raw_input()
-    #print(a)
-    user_x, user_y= [int(i) for i in a.split()]
-    ConfigApp(video_src).run(user_x, user_y)
+    try: 
+        video_src = sys.argv[1]
+    except: 
+        video_src = 0
+    got_ans1, got_ans2= False, False
+
+    print("Prefered resolution of the video:\nEnter two space seperated integers like '720 480' without quotes: ")
+    try:
+        a= raw_input()
+        #print(a)
+        user_x, user_y= [int(i) for i in a.split()]
+        got_ans1= True
+    except:
+        print("Please check the entered value and re-run the program.")
+    
+    print("Prefered ROI type:\nEnter a word- rectangle or polygon: ")
+    try:
+        a= raw_input()
+        if a== "rectangle":
+            ROI_type= 0
+            got_ans2= True
+        elif a== "polygon":
+            ROI_type= 1
+            got_ans2= True
+        else:
+            got_ans2= False
+            print("Please check the entered value and re-run the program.")
+    except:
+        print("Please check the entered value and re-run the program.")
+        
+    if got_ans1 and got_ans2:
+        ConfigApp(video_src, ROI_type).run(user_x, user_y)
