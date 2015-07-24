@@ -49,10 +49,11 @@ class PlaneTracker:
         self.detector = cv2.ORB( nfeatures = 1000 )
         self.matcher = cv2.FlannBasedMatcher(flann_params, {})  # bug : need to pass empty dict (#1329)
         self.targets = []
+        self.user_res= []
 
     def load_data(self, file_name, data=None):
         input_file= open(file_name, "r")
-        [all_index, all_rects_descs, all_rects]= pickle.load(input_file)
+        [all_index, all_rects_descs, all_rects, all_circles, self.user_res]= pickle.load(input_file)
 
         for i in range(len(all_rects)):
             index= all_index[i]
@@ -136,6 +137,7 @@ class ImageProcessionApp:
                 break
             self.frame = frame.copy()
 
+            self.frame= cv2.resize(self.frame, (self.tracker.user_res[1], self.tracker.user_res[0]))
             vis = self.frame.copy()
             
 
@@ -157,7 +159,18 @@ class ImageProcessionApp:
 if __name__ == '__main__':
     print __doc__
     import sys
-    file_name= sys.argv[1]
-    try: video_src = sys.argv[2]
-    except: video_src = 0
-    ImageProcessionApp(file_name, video_src).run()
+    got_arg= False
+    try:
+        file_name= sys.argv[1]
+        got_arg= True
+    except:
+        print("ERROR: Need to provide path to object file. See the usage below:\nUsage:\n\tImageProcessingTask.py <saved/object/file> [<video_source>]")
+    try: 
+        video_src = sys.argv[2]
+    except: 
+        video_src = 0
+    
+    if got_arg:
+        ImageProcessionApp(file_name, video_src).run()
+    else:
+        pass

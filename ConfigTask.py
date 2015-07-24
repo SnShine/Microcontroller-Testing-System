@@ -105,8 +105,9 @@ class FeatureDetector:
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
 
-    def extract_features(self, image, rects, data=None):
+    def extract_features(self, image, rects, circles, user_res, data=None):
         all_rects_points, all_rects_descs, all_rects= [], [], rects
+        all_circles= circles
         for rect in rects:
             x0, y0, x1, y1 = rect
             raw_points, raw_descrs = self.detect_features(image)
@@ -122,7 +123,7 @@ class FeatureDetector:
             all_rects_points.append(points)
             all_rects_descs.append(descs)
 
-        self.callback(all_rects_points, all_rects_descs, all_rects)
+        self.callback(all_rects_points, all_rects_descs, all_rects, all_circles, user_res)
 
 
     def detect_features(self, frame):
@@ -144,7 +145,7 @@ class ConfigApp:
         self.rect_sel = RectSelector('plane')
         self.feat_det= FeatureDetector(self.save_data)
 
-    def run(self):
+    def run(self, user_x, user_y):
         while True:
             playing = not self.paused and not self.rect_sel.dragging
             if playing or self.frame is None:
@@ -153,8 +154,17 @@ class ConfigApp:
                     break
                 self.frame = frame.copy()
 
+            #need to select on of the following three frame resolutions
+            
+            ratio= self.frame.shape[1]/float(self.frame.shape[0])
+            self.frame= cv2.resize(self.frame, (int(user_x), int(user_x/ratio)))
+            #self.frame= cv2.resize(self.frame, (int(user_x), int(user_y)))
+            #self.frame= cv2.resize(self.frame, (int(user_y*ratio), int(user_y)))
+            
+            #print(self.frame.shape)
+            user_res= self.frame.shape
             vis = self.frame.copy()
-    
+
             self.rect_sel.draw(vis)
             cv2.imshow('plane', vis)
 
@@ -162,17 +172,17 @@ class ConfigApp:
             if ch == ord(' '):
                 self.paused = not self.paused
             if ch == ord('c'):
-                self.rect_sel.rectangles= []
+                self.rect_0sel.rectangles= []
                 self.rect_sel.circles= []
                 print("Cleared all marked Rectangles & Circles from 'Region Of Interest'!")
             if ch == ord('s'):
                 #save to .obj file
-                self.feat_det.extract_features(self.frame, self.rect_sel.rectangles)                  
+                self.feat_det.extract_features(self.frame, self.rect_sel.rectangles, self.rect_sel.circles, user_res)                  
             if ch == 27:
                 break
 
-    def save_data(self, all_rects_points, all_rects_descs, all_rects):
-        file_object=  open("outputFile", "wb")
+    def save_data(self, all_rects_points, all_rects_descs, all_rects, all_circles, user_res):
+        file_object=  open("outputFile.p", "wb")
         #print(type(points), type(descs), type(rect))
         all_index= []
 
@@ -183,13 +193,17 @@ class ConfigApp:
                 index.append(temp)
             all_index.append(index)
 
-        pickle.dump([all_index, all_rects_descs, all_rects], file_object)
+        pickle.dump([all_index, all_rects_descs, all_rects, all_circles, user_res], file_object)
         file_object.close()
-        print("Successfully saved selected ROIs to 'outputFile'")
+        print("Successfully saved selected ROIs to 'outputFile.p'")
 
 if __name__ == '__main__':
     print __doc__
     import sys
     try: video_src = sys.argv[1]
     except: video_src = 0
-    ConfigApp(video_src).run()
+    print("Required resolution of the video(Enter two space seperated integers like \n'720 480' without quotes)\n")
+    a= raw_input()
+    #print(a)
+    user_x, user_y= [int(i) for i in a.split()]
+    ConfigApp(video_src).run(user_x, user_y)
