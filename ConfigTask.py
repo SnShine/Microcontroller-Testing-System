@@ -56,6 +56,7 @@ class RectSelector:
             self.circles.append([x, y])
             tempName= "LED: "+ str(len(self.circles))
             self.cNames.append(tempName)
+            print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
     def draw(self, vis):
         if not self.drag_rect:
@@ -74,7 +75,7 @@ class RectSelector:
             if self.counter== 150 and [x0,y0,x1,y1] not in self.rectangles:
                 # Rectangle i sappended as ROI if it is unchanged for 150 frames (not in dragging position)
                 self.rectangles.append([x0,y0,x1,y1])
-                print("Added the rectangle with ("+str(x0)+","+str(y0)+"), ("+str(x1)+","+str(y1)+") as diagonal points to 'Region Of Interest!'")
+                print("Added rectangle with ("+str(x0)+","+str(y0)+"), ("+str(x1)+","+str(y1)+") as diagonal points to 'Region Of Interest!' dataBase")
                 self.counter= 0
         else:
             self.counter= 0
@@ -172,9 +173,9 @@ class ConfigApp:
             if ch == ord(' '):
                 self.paused = not self.paused
             if ch == ord('c'):
-                self.rect_0sel.rectangles= []
+                self.rect_sel.rectangles= []
                 self.rect_sel.circles= []
-                print("Cleared all marked Rectangles & Circles from 'Region Of Interest'!")
+                print("Cleared all marked Rectangles & Circles from dataBase")
             if ch == ord('s'):
                 #save to .obj file
                 self.feat_det.extract_features(self.frame, self.rect_sel.rectangles, self.rect_sel.circles, user_res)                  
@@ -195,7 +196,7 @@ class ConfigApp:
 
         pickle.dump([all_index, all_rects_descs, all_rects, all_circles, user_res], file_object)
         file_object.close()
-        print("Successfully saved selected ROIs to 'outputFile.p'")
+        print("Successfully saved the whole dataBase to 'outputFile.p'")
 
 if __name__ == '__main__':
     print __doc__
