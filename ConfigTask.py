@@ -37,12 +37,67 @@ class ROIselector:
             cv2.setMouseCallback(win, self.poly_circ)
         self.drag_start = None
         self.drag_rect = None
+        self.dragging_poly= None
+        
         self.rectangles= []
         self.circles= []
         self.cNames= []
+        self.polygon= []
+        self.polygons= []
         self.tx0,self.ty0,self.tx1,self.ty1= 0,0,0,0
         self.counter= 0
+
+    def poly_circ(self, event, x, y, flags, param):
+        x, y= np.int16([x, y])
+        start_point= []
+        #end_point= []
+        
+        if event== cv2.EVENT_LBUTTONDBLCLK:
+            x, y = np.int16([x, y])
+            self.circles.append([x, y])
+            tempName= "LED: "+ str(len(self.circles))
+            self.cNames.append(tempName)
+            print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
+
+        #print(self.polygon)
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if self.dragging_poly:
+                end_point= [x, y]
+                self.dragging_poly= [x, y]
+        elif event== cv2.EVENT_LBUTTONDOWN:
+            self.dragging_poly= [x, y]
+            start_point= [x, y]
+            if len(self.polygon)> 0:
+                if self.polygon[-1][0]- 10<= start_point[0]<= self.polygon[-1][0]+ 10 and self.polygon[-1][1]-10<= start_point[1]<= self.polygon[-1][1]+ 10:
+                    pass
+                else:
+                    print("please select point near last end point")
+            else:
+                self.polygon.append(start_point)
+                print("start point appended")
+            
+        elif event== cv2.EVENT_LBUTTONUP:
+                self.dragging_poly= None
+                end_point= [x, y]
+                #self.polygon.append(end_point)
+                if not (self.polygon[-1][0]-10<= end_point[0]<= self.polygon[-1][0]+10 and self.polygon[-1][1]-10<= end_point[1]<= self.polygon[-1][1]+10):
+                    print(self.polygon, end_point)
+                    if self.polygon[0][0]- 10<= end_point[0]<= self.polygon[0][0]+ 10 and self.polygon[0][1]-10<= end_point[1]<= self.polygon[0][1]+10 and len(self.polygon)>= 3:
+                        print("self.polygon completed!")
+                        self.polygons.append(self.polygon)
+                        self.polygon= []
+                        print("polygon cleared")
+                    else:
+                        self.polygon.append(end_point)
+                else:
+                    self.polygon= self.polygon[:-1]
+
+
+
+
+
     def rect_circ(self, event, x, y, flags, param):
+        '''mouse callback function if ROI is rectangle'''
         x, y = np.int16([x, y]) # BUG
         #ch = cv2.waitKey(1)
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -64,7 +119,15 @@ class ROIselector:
             self.cNames.append(tempName)
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
+    def draw_line(self, vis, start, end):
+        cv2.line(vis, tuple(start), tuple(end), (0,255,0), 2)
+    def draw_polygon(self, vis, polygonx):
+        for i in range(len(polygonx)- 1):
+            self.draw_line(vis, polygonx[i], polygonx[i+1])
+        self.draw_line(vis, polygonx[-1], polygonx[0])
+
     def draw(self, vis):
+        '''Draws circles around LEDs and ROI(rectangle or self.polygon)'''
         if not self.drag_rect:
             for rect in self.rectangles:
                 x0,y0,x1,y1= rect
@@ -73,7 +136,20 @@ class ROIselector:
                 x, y= self.circles[i]
                 cv2.circle(vis, (x, y), 7, (255,0,0), 2)
                 cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
-            #code to draw polygon goes here
+            #code to draw self.polygon goes here
+            for polygonx in self.polygons:
+                self.draw_polygon(vis, polygonx)
+
+            for i in range(len(self.polygon)- 1):
+                    self.draw_line(vis, self.polygon[i], self.polygon[i+1])
+            
+            if self.dragging_poly:
+                #print(self.polygon, self.dragging_poly)
+
+                for i in range(len(self.polygon)- 1):
+                    self.draw_line(vis, self.polygon[i], self.polygon[i+1])
+                self.draw_line(vis, self.polygon[-1], self.dragging_poly)
+
             return False
 
         x0, y0, x1, y1= self.drag_rect
@@ -182,7 +258,9 @@ class ConfigApp:
             if ch == ord('c'):
                 self.rect_sel.rectangles= []
                 self.rect_sel.circles= []
-                print("Cleared all marked Rectangles & Circles from dataBase")
+                self.rect_sel.polygons= []
+                self.rect_sel.polygon= []
+                print("Cleared all marked Rectangles/Polygons & Circles from dataBase")
             if ch == ord('s'):
                 #save to .obj file
                 self.feat_det.extract_features(self.frame, self.rect_sel.rectangles, self.rect_sel.circles, user_res)                  
