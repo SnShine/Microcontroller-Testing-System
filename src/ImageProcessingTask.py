@@ -3,7 +3,7 @@ Image Processing Task
 =====================
 
 Usage:
-        ImageProcessingTask.py <saved/object/file> [<video_source>]
+        ImageProcessingTask.py [<saved/object/file> [<video_source>]]
 
 Keys:
         <Space Bar> - Pause the video
@@ -55,7 +55,11 @@ class PlaneTracker:
         self.user_res= []
 
     def load_data(self, file_name, data=None):
-        input_file= open(file_name, "r")
+        try:
+            input_file= open(file_name, "r")
+            #print(file_name)
+        except:
+            print("Unable to open the file- "+file_name+". Please re-run the program.")
         [all_index, all_rects_descs, all_rects, all_circles, self.user_res]= pickle.load(input_file)
 
         for i in range(len(all_rects)):
@@ -163,17 +167,15 @@ if __name__ == '__main__':
     print __doc__
     import sys
     
-    got_arg= False
     try:
         file_name= sys.argv[1]
-        got_arg= True
     except:
-        print("ERROR: Need to provide path to object file. See the usage below:\nUsage:\n\tImageProcessingTask.py <saved/object/file> [<video_source>]")
+        file_name= "outputFile.p"
+        #print("ERROR: Need to provide path to object file. See the usage below:\nUsage:\n\tImageProcessingTask.py <saved/object/file> [<video_source>]")
     
     try: 
         video_src = sys.argv[2]
     except: 
         video_src = 0
     
-    if got_arg:
-        ImageProcessionApp(file_name, video_src).run()
+    ImageProcessionApp(file_name, video_src).run()
