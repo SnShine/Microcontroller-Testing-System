@@ -53,6 +53,7 @@ class PlaneTracker:
         self.matcher = cv2.FlannBasedMatcher(flann_params, {})  # bug : need to pass empty dict (#1329)
         self.targets = []
         self.user_res= []
+        self.ROI_type= 0
 
     def load_data(self, file_name, data=None):
         try:
@@ -60,7 +61,7 @@ class PlaneTracker:
             #print(file_name)
         except:
             print("Unable to open the file- "+file_name+". Please re-run the program.")
-        [all_index, all_rects_descs, all_rects, all_circles, self.user_res]= pickle.load(input_file)
+        [all_index, all_rects_descs, all_rects, [all_circles, all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
 
         for i in range(len(all_rects)):
             index= all_index[i]
@@ -104,8 +105,14 @@ class PlaneTracker:
                 continue
             p0, p1 = p0[status], p1[status]
 
-            x0, y0, x1, y1 = target.rect
-            quad = np.float32([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])
+            if self.ROI_type== 0:
+                x0, y0, x1, y1 = target.rect
+                quad = np.float32([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])
+            elif self.ROI_type== 1:
+                #x0, y0, x1, y1 = target.rect
+                #quad = np.float32([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])         #for method 1 or method 2
+                quad = np.float32(target.rect)
+
             quad = cv2.perspectiveTransform(quad.reshape(1, -1, 2), H).reshape(-1, 2)
 
             track = TrackedTarget(target=target, p0=p0, p1=p1, H=H, quad=quad)
@@ -138,18 +145,21 @@ class ImageProcessionApp:
         self.tracker.load_data(self.file_name)
 
         while True:
+            playing = not self.paused
+            if playing or self.frame is None:
+                ret, frame = self.cap.read()
+                if not ret:
+                    break
+                self.frame = frame.copy()
             
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-            self.frame = frame.copy()
 
             self.frame= cv2.resize(self.frame, (self.tracker.user_res[1], self.tracker.user_res[0]))
             vis = self.frame.copy()
             
-
             tracked = self.tracker.track(self.frame)
+            #print(len(tracked))
             for tr in tracked:
+                #print(tr.quad)
                 cv2.polylines(vis, [np.int32(tr.quad)], True, (255, 255, 255), 2)
                 for (x, y) in np.int32(tr.p1):
                     cv2.circle(vis, (x, y), 2, (255, 255, 255))

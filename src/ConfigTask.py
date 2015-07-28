@@ -55,7 +55,10 @@ class ROIselector:
         if event== cv2.EVENT_LBUTTONDBLCLK:
             x, y = np.int16([x, y])
             self.circles.append([x, y])
-            tempName= "LED: "+ str(len(self.circles))
+            #tempName= "LED: "+ str(len(self.circles))
+            print("Enter the prefered name of selected LED: ")
+            tempLED= raw_input()
+            tempName= "LED: "+ str(tempLED)
             self.cNames.append(tempName)
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
@@ -83,9 +86,9 @@ class ROIselector:
                 if not (self.polygon[-1][0]-10<= end_point[0]<= self.polygon[-1][0]+10 and self.polygon[-1][1]-10<= end_point[1]<= self.polygon[-1][1]+10):
                     
                     if self.polygon[0][0]- 10<= end_point[0]<= self.polygon[0][0]+ 10 and self.polygon[0][1]-10<= end_point[1]<= self.polygon[0][1]+10 and len(self.polygon)>= 3:
-                        print("self.polygon completed!")
                         self.polygons.append(self.polygon)
-                        print(self.polygons)
+                        print("Added polygon with "+str(self.polygons[-1])+" as points to the 'Region Of Interest' database!")
+                        #print(self.polygons)
                         self.polygon= []
                         #print("polygon cleared")
                     else:
@@ -118,7 +121,10 @@ class ROIselector:
         if event== cv2.EVENT_LBUTTONDBLCLK:
             x, y = np.int16([x, y])
             self.circles.append([x, y])
-            tempName= "LED: "+ str(len(self.circles))
+            #tempName= "LED: "+ str(len(self.circles))
+            print("Enter the prefered name of selected LED: ")
+            tempLED= raw_input()
+            tempName= "LED: "+ str(tempLED)
             self.cNames.append(tempName)
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
@@ -192,6 +198,24 @@ class FeatureDetector:
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
 
+    def is_point_inside(self, r1, r2, r3, r4, r):       #useless fnction!
+        #r1r2r4
+        print(r1,r2,r3,r4,r4)
+        alpha= float((r2[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r2[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
+        beta= float((r4[1] - r1[1])*(r[0] - r4[0]) + (r1[0] - r4[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
+        gamma= 1- alpha- beta
+        if alpha >= 0 and beta >= 0 and gamma >= 0:
+            #print(r1,r2,r3,r4,r, "dfadfs")
+            return True
+        #r2r3r4
+        alpha= float((r3[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r3[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
+        beta= float((r4[1] - r2[1])*(r[0] - r4[0]) + (r2[0] - r4[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
+        gamma= 1- alpha- beta
+        if alpha >= 0 and beta >= 0 and gamma >= 0:
+            #print(r1,r2,r3,r4,r, "asdfasdf")
+            return True
+        return False
+
     def extract_features(self, image, ROIs, circles, user_res, ROI_type, data=None):
         all_ROIs_points, all_ROIs_descs, all_circles= [], [], circles
 
@@ -215,9 +239,13 @@ class FeatureDetector:
             self.callback(all_ROIs_points, all_ROIs_descs, all_rects, all_circles, user_res)
         elif ROI_type== 1:
             all_polys= ROIs
+            all_polys_new= []
             all_polys_to_rects= []
             for poly in all_polys:
                 #modifying polygon into a rectangle while extracting feature points!
+
+                [[p0, q0], [p1, q1], [p2, q2], [p3, q3]]= poly[:4]
+                all_polys_new.append([[p0, q0], [p1, q1], [p2, q2], [p3, q3]])
 
                 x0= int(float(poly[0][0]+ poly[3][0])/2)
                 y0= int(float(poly[0][1]+ poly[1][1])/2)
@@ -226,21 +254,22 @@ class FeatureDetector:
                 all_polys_to_rects.append([x0, y0, x1, y1])
                 raw_points, raw_descrs = self.detect_features(image)
 
-                print(poly)
-                print(all_polys_to_rects)
+                #print(poly)
+                #print(all_polys_to_rects)
 
                 points, descs = [], []
 
                 for kp, desc in zip(raw_points, raw_descrs):
                     x, y = kp.pt
-                    if x0 <= x <= x1 and y0 <= y <= y1:
+                    if x0 <= x <= x1 and y0 <= y <= y1:                                    #first or second
+                    #if self.is_point_inside([p0, q0], [p1, q1], [p2, q2], [p3, q3], [x, y]):
                         points.append(kp)
                         descs.append(desc)
 
                 all_ROIs_points.append(points)
                 all_ROIs_descs.append(descs) 
 
-            self.callback(all_ROIs_points, all_ROIs_descs, all_polys_to_rects, all_circles, user_res)
+            self.callback(all_ROIs_points, all_ROIs_descs, all_polys_new, all_circles, user_res)   #all_polys_to_rects or all_polys_new
 
 
     def detect_features(self, frame):
@@ -294,6 +323,7 @@ class ConfigApp:
                 self.rect_sel.circles= []
                 self.rect_sel.polygons= []
                 self.rect_sel.polygon= []
+                self.rect_sel.cNames= []
                 print("Cleared all marked Rectangles/Polygons & Circles from dataBase")
             if ch == ord('s'):
                 #save to .obj file
@@ -306,7 +336,7 @@ class ConfigApp:
                 break
 
     def save_data(self, all_ROIs_points, all_ROIs_descs, all_modified_ROIs, all_circles, user_res):
-        print(len(all_modified_ROIs), len(all_ROIs_points))
+        #print(len(all_modified_ROIs), len(all_ROIs_points))
         file_object=  open("outputFile.p", "wb")
         #print(type(points), type(descs), type(rect))
         all_index= []
@@ -318,7 +348,7 @@ class ConfigApp:
                 index.append(temp)
             all_index.append(index)
 
-        pickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, all_circles, user_res], file_object)
+        pickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, [all_circles, self.rect_sel.cNames], user_res, self.ROI_type], file_object)
         file_object.close()
         print("Successfully saved the whole dataBase to 'outputFile.p'")
 
