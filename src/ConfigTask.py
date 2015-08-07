@@ -143,7 +143,7 @@ class ROIselector:
                 cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
             for i in range(len(self.circles)):
                 x, y= self.circles[i]
-                cv2.circle(vis, (x, y), 7, (255,0,0), 2)
+                cv2.circle(vis, (x, y), 8, (255,0,0), 2)
                 cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
             #code to draw self.polygon goes here
             for polygonx in self.polygons:
@@ -180,7 +180,7 @@ class ROIselector:
             cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
         for i in range(len(self.circles)):
             x, y= self.circles[i]
-            cv2.circle(vis, (x, y), 7, (255,0,0), 2)
+            cv2.circle(vis, (x, y), 8, (255,0,0), 2)
             cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
         return True
@@ -198,23 +198,23 @@ class FeatureDetector:
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
 
-    def is_point_inside(self, r1, r2, r3, r4, r):       #useless fnction!
-        #r1r2r4
-        print(r1,r2,r3,r4,r4)
-        alpha= float((r2[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r2[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
-        beta= float((r4[1] - r1[1])*(r[0] - r4[0]) + (r1[0] - r4[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
-        gamma= 1- alpha- beta
-        if alpha >= 0 and beta >= 0 and gamma >= 0:
-            #print(r1,r2,r3,r4,r, "dfadfs")
-            return True
-        #r2r3r4
-        alpha= float((r3[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r3[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
-        beta= float((r4[1] - r2[1])*(r[0] - r4[0]) + (r2[0] - r4[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
-        gamma= 1- alpha- beta
-        if alpha >= 0 and beta >= 0 and gamma >= 0:
-            #print(r1,r2,r3,r4,r, "asdfasdf")
-            return True
-        return False
+    # def is_point_inside(self, r1, r2, r3, r4, r):       #useless fnction!
+    #     #r1r2r4
+    #     print(r1,r2,r3,r4,r4)
+    #     alpha= float((r2[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r2[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
+    #     beta= float((r4[1] - r1[1])*(r[0] - r4[0]) + (r1[0] - r4[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
+    #     gamma= 1- alpha- beta
+    #     if alpha >= 0 and beta >= 0 and gamma >= 0:
+    #         #print(r1,r2,r3,r4,r, "dfadfs")
+    #         return True
+    #     #r2r3r4
+    #     alpha= float((r3[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r3[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
+    #     beta= float((r4[1] - r2[1])*(r[0] - r4[0]) + (r2[0] - r4[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
+    #     gamma= 1- alpha- beta
+    #     if alpha >= 0 and beta >= 0 and gamma >= 0:
+    #         #print(r1,r2,r3,r4,r, "asdfasdf")
+    #         return True
+    #     return False
 
     def extract_features(self, image, ROIs, circles, user_res, ROI_type, data=None):
         all_ROIs_points, all_ROIs_descs, all_circles= [], [], circles
@@ -245,7 +245,8 @@ class FeatureDetector:
                 #modifying polygon into a rectangle while extracting feature points!
 
                 [[p0, q0], [p1, q1], [p2, q2], [p3, q3]]= poly[:4]
-                all_polys_new.append([[p0, q0], [p1, q1], [p2, q2], [p3, q3]])
+                #all_polys_new.append([[p0, q0], [p1, q1], [p2, q2], [p3, q3]])
+                all_polys_new.append(poly)
 
                 x0= int(float(poly[0][0]+ poly[3][0])/2)
                 y0= int(float(poly[0][1]+ poly[1][1])/2)

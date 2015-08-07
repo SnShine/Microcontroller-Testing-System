@@ -45,7 +45,7 @@ PlanarTarget = namedtuple('PlaneTarget', 'rect, keypoints, descrs, data')
   H      - homography matrix from p0 to p1
   quad   - target bounary quad in input frame
 '''
-TrackedTarget = namedtuple('TrackedTarget', 'target, p0, p1, H, quad')
+TrackedTarget = namedtuple('TrackedTarget', 'target, p0, p1, H, quad, circles')
 
 class PlaneTracker:
     def __init__(self):
@@ -54,6 +54,9 @@ class PlaneTracker:
         self.targets = []
         self.user_res= []
         self.ROI_type= 0
+        #self.all_circles
+        #self.all_cNames
+        self.all_circles_new= []
 
     def load_data(self, file_name, data=None):
         try:
@@ -61,7 +64,7 @@ class PlaneTracker:
             #print(file_name)
         except:
             print("Unable to open the file- "+file_name+". Please re-run the program.")
-        [all_index, all_rects_descs, all_rects, [all_circles, all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
+        [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
 
         for i in range(len(all_rects)):
             index= all_index[i]
@@ -115,7 +118,14 @@ class PlaneTracker:
 
             quad = cv2.perspectiveTransform(quad.reshape(1, -1, 2), H).reshape(-1, 2)
 
-            track = TrackedTarget(target=target, p0=p0, p1=p1, H=H, quad=quad)
+            #transforming saved led positions to new positions!
+            self.all_circles_new= []
+            for circleI in range(len(self.all_circles)):
+                new_point= cv2.perspectiveTransform(np.float32(self.all_circles[circleI]).reshape(1, -1, 2), H).reshape(-1,2)
+                #print(self.all_circles[circleI], point)
+                self.all_circles_new.append(new_point)
+
+            track = TrackedTarget(target=target, p0=p0, p1=p1, H=H, quad=quad, circles= self.all_circles_new)
             tracked.append(track)
         tracked.sort(key = lambda t: len(t.p0), reverse=True)
         return tracked
@@ -161,8 +171,15 @@ class ImageProcessionApp:
             for tr in tracked:
                 #print(tr.quad)
                 cv2.polylines(vis, [np.int32(tr.quad)], True, (255, 255, 255), 2)
-                for (x, y) in np.int32(tr.p1):
-                    cv2.circle(vis, (x, y), 2, (255, 255, 255))
+                # for (x, y) in np.int32(tr.p1):
+                #     cv2.circle(vis, (x, y), 2, (255, 255, 255))
+                #print(tr.circles)
+                for i in range(len(tr.circles)):
+                    #print(new_center)
+                    [x, y]= np.int32(tr.circles[i][0])
+                    cv2.circle(vis, (x, y), 8, (255,0,0), 2)
+
+                    cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
 
             cv2.imshow('plane', vis)
