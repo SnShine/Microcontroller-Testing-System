@@ -45,7 +45,7 @@ PlanarTarget = namedtuple('PlaneTarget', 'rect, keypoints, descrs, data')
   H      - homography matrix from p0 to p1
   quad   - target bounary quad in input frame
 '''
-TrackedTarget = namedtuple('TrackedTarget', 'target, p0, p1, H, quad, circles')
+TrackedTarget = namedtuple('TrackedTarget', 'target, p0, p1, H, quad')
 
 class PlaneTracker:
     def __init__(self):
@@ -125,7 +125,7 @@ class PlaneTracker:
                 #print(self.all_circles[circleI], point)
                 self.all_circles_new.append(new_point)
 
-            track = TrackedTarget(target=target, p0=p0, p1=p1, H=H, quad=quad, circles= self.all_circles_new)
+            track = TrackedTarget(target=target, p0=p0, p1=p1, H=H, quad=quad)
             tracked.append(track)
         tracked.sort(key = lambda t: len(t.p0), reverse=True)
         return tracked
@@ -137,8 +137,32 @@ class PlaneTracker:
             descrs = []
         return keypoints, descrs
 
+class ledApp:
+    def __init__(self):
+        #data of all the leds
+        self.statuses= []
+        self.colors= []
+        self.frequencies= []
+        self.frame= None
+
+    def starter(self, frame, circles):
+        #start process with remaining functions
+        self.frame= frame
+        print(circles)
+        for i in range(len(circles)):
+            self.statuses.append(self.get_status(circles[i]))
+            self.colors.append(self.get_color(circles[i]))
+            self.frequencies.append(self.get_frequency(circles[i]))
 
 
+    def get_status(self, circle):
+        # print(circle)
+        return 0
+
+    def get_color(self, circle):
+        return 0
+    def get_frequency(self, circle):
+        return 0
 
 class ImageProcessionApp:
     def __init__(self, file_name, src):
@@ -147,6 +171,7 @@ class ImageProcessionApp:
         self.paused = False
         self.file_name= file_name
         self.tracker = PlaneTracker()
+        self.ledModifier= ledApp()
 
         cv2.namedWindow('plane')
 
@@ -167,19 +192,23 @@ class ImageProcessionApp:
             vis = self.frame.copy()
             
             tracked = self.tracker.track(self.frame)
-            #print(len(tracked))
+
             for tr in tracked:
                 #print(tr.quad)
                 cv2.polylines(vis, [np.int32(tr.quad)], True, (255, 255, 255), 2)
                 # for (x, y) in np.int32(tr.p1):
                 #     cv2.circle(vis, (x, y), 2, (255, 255, 255))
                 #print(tr.circles)
-                for i in range(len(tr.circles)):
-                    #print(new_center)
-                    [x, y]= np.int32(tr.circles[i][0])
-                    cv2.circle(vis, (x, y), 8, (255,0,0), 2)
+            
+            for i in range(len(self.tracker.all_circles_new)):
+                #print(new_center)
+                [x, y]= np.int32(self.tracker.all_circles_new[i][0])
+                cv2.circle(vis, (x, y), 8, (255,0,0), 2)
+                cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
-                    cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
+            #send to ledApp to know statuses of leds
+            self.ledModifier.starter(vis, self.tracker.all_circles_new)
+            # use the lists created in ledapp to senf to interpreter task!
 
 
             cv2.imshow('plane', vis)
