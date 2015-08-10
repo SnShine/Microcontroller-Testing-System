@@ -140,27 +140,48 @@ class PlaneTracker:
 class ledApp:
     def __init__(self):
         #data of all the leds
-        self.statuses= []
-        self.colors= []
-        self.frequencies= []
+        self.statuses= None     #False= off; True= on
+        self.colors= None
+        self.frequencies= None
         self.frame= None
+        self.thresholded= None
 
     def starter(self, frame, circles):
         #start process with remaining functions
+        print(len(circles))
         self.frame= frame
-        print(circles)
+        gray= cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow("plane2", gray)
+        
+
+        th, self.thresholded= cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
+        cv2.imshow("plane3", self.thresholded)
+        #print(len(self.thresholded))
+
+        self.statuses= []
+        self.colors= []
+        self.frequencies= []
+
         for i in range(len(circles)):
-            self.statuses.append(self.get_status(circles[i]))
-            self.colors.append(self.get_color(circles[i]))
-            self.frequencies.append(self.get_frequency(circles[i]))
+            #print(circles[i][0])
+            temp_status, temp_color= self.get_status_color(circles[i][0])
 
 
-    def get_status(self, circle):
-        # print(circle)
-        return 0
+    def get_status_color(self, circle):
+        ret= []
+        x, y= circle
+        y,x= int(x), int(y)
+        area_sum= sum(sum(self.thresholded[x-3:x+4, y-3:y+4])) #max= 7*255= 1785
+        print(area_sum)
 
-    def get_color(self, circle):
-        return 0
+        if(area_sum>= 1600):
+            ret.append(True)
+        else:
+            ret.append(False)
+
+        
+        return ret
+
     def get_frequency(self, circle):
         return 0
 
@@ -193,6 +214,10 @@ class ImageProcessionApp:
             
             tracked = self.tracker.track(self.frame)
 
+            #send to ledApp to know statuses of leds
+            self.ledModifier.starter(vis, self.tracker.all_circles_new)
+            # use the lists created in ledapp to senf to interpreter task!
+
             for tr in tracked:
                 #print(tr.quad)
                 cv2.polylines(vis, [np.int32(tr.quad)], True, (255, 255, 255), 2)
@@ -206,9 +231,7 @@ class ImageProcessionApp:
                 cv2.circle(vis, (x, y), 8, (255,0,0), 2)
                 cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
-            #send to ledApp to know statuses of leds
-            self.ledModifier.starter(vis, self.tracker.all_circles_new)
-            # use the lists created in ledapp to senf to interpreter task!
+            
 
 
             cv2.imshow('plane', vis)
