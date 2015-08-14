@@ -42,6 +42,7 @@ class ROIselector:
         self.rectangles= []
         self.circles= []
         self.cNames= []
+        self.cRadiuses= []
         self.polygon= []
         self.polygons= []
         self.tx0,self.ty0,self.tx1,self.ty1= 0,0,0,0
@@ -56,10 +57,12 @@ class ROIselector:
             x, y = np.int16([x, y])
             self.circles.append([x, y])
             #tempName= "LED: "+ str(len(self.circles))
-            print("Enter the prefered name of selected LED: ")
-            tempLED= raw_input()
+            print("Enter the prefered name of selected LED and radius (seperated with a space): ")
+            tempLED, tempRadius= raw_input().split()
+            tempRadius= int(tempRadius)
             tempName= "LED: "+ str(tempLED)
             self.cNames.append(tempName)
+            self.cRadiuses.append(tempRadius)
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
         #print(self.polygon)
@@ -123,9 +126,11 @@ class ROIselector:
             self.circles.append([x, y])
             #tempName= "LED: "+ str(len(self.circles))
             print("Enter the prefered name of selected LED: ")
-            tempLED= raw_input()
+            tempLED, tempRadius= raw_input().split()
+            tempRadius= int(tempRadius)
             tempName= "LED: "+ str(tempLED)
             self.cNames.append(tempName)
+            self.cRadiuses.append(tempRadius)
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
     def draw_line(self, vis, start, end):
@@ -143,8 +148,9 @@ class ROIselector:
                 cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
             for i in range(len(self.circles)):
                 x, y= self.circles[i]
-                cv2.circle(vis, (x, y), 8, (255,0,0), 2)
-                cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
+                tempR= self.cRadiuses[i]
+                cv2.circle(vis, (x, y), tempR, (255,0,0), 2)
+                cv2.putText(vis, self.cNames[i], (x-15, y-tempR-5),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
             #code to draw self.polygon goes here
             for polygonx in self.polygons:
                 self.draw_polygon(vis, polygonx)
@@ -180,8 +186,9 @@ class ROIselector:
             cv2.rectangle(vis, (x0, y0), (x1, y1), (0, 255, 0), 2)
         for i in range(len(self.circles)):
             x, y= self.circles[i]
-            cv2.circle(vis, (x, y), 8, (255,0,0), 2)
-            cv2.putText(vis, self.cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
+            tempR= self.cRadiuses[i]
+            cv2.circle(vis, (x, y), tempR, (255,0,0), 2)
+            cv2.putText(vis, self.cNames[i], (x-15, y-tempR-5),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
         return True
     @property
@@ -325,6 +332,7 @@ class ConfigApp:
                 self.rect_sel.polygons= []
                 self.rect_sel.polygon= []
                 self.rect_sel.cNames= []
+                self.rect_sel.cRadiuses= []
                 print("Cleared all marked Rectangles/Polygons & Circles from dataBase")
             if ch == ord('s'):
                 #save to .obj file
@@ -349,7 +357,7 @@ class ConfigApp:
                 index.append(temp)
             all_index.append(index)
 
-        pickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, [all_circles, self.rect_sel.cNames], user_res, self.ROI_type], file_object)
+        pickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, [all_circles, self.rect_sel.cRadiuses, self.rect_sel.cNames], user_res, self.ROI_type], file_object)
         file_object.close()
         print("Successfully saved the whole dataBase to 'outputFile.p'")
 
