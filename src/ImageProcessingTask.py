@@ -56,6 +56,7 @@ class PlaneTracker:
         self.ROI_type= 0
         #self.all_circles
         #self.all_cNames
+        #self.all_cRadiuses
         self.all_circles_new= []
 
     def load_data(self, file_name, data=None):
@@ -64,7 +65,7 @@ class PlaneTracker:
             #print(file_name)
         except:
             print("Unable to open the file- "+file_name+". Please re-run the program.")
-        [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
+        [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cRadiuses, self.all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
 
         for i in range(len(all_rects)):
             index= all_index[i]
@@ -148,14 +149,14 @@ class ledApp:
         self.gray= None
         self.thresholded= None
 
-    def starter(self, frame, circles):
+    def starter(self, frame, circles, names):
         #start process with remaining functions
         #print(len(circles))
         self.frame= frame
         self.blur = cv2.GaussianBlur(self.frame,(5,5),0)
         self.gray= cv2.cvtColor(self.blur, cv2.COLOR_BGR2GRAY)
-        cv2.imshow("plane2", self.gray)
-        cv2.imshow("152", self.blur)
+        #cv2.imshow("plane2", self.gray)
+        cv2.imshow("blur", self.blur)
 
         self.statuses= []
         self.colors= []
@@ -163,8 +164,10 @@ class ledApp:
 
         for i in range(len(circles)):
             print
-            print("circle: "+ str(i+1))
+            print("circle: "+ names[i])
             temp_status, temp_color= self.get_status_color(circles[i][0])
+            print(temp_status, temp_color)
+
 
 
     def get_status_color(self, circle):
@@ -177,9 +180,10 @@ class ledApp:
         cv2.imshow("plane3", self.thresholded)
 
         area_sum= sum(sum(self.thresholded[x-3:x+4, y-3:y+4])) #max= 7*255= 1785        #threshold value = 240
-        #print(area_sum)
+        #print(self.thresholded[x-3:x+4, y-3:y+4])
+        print(area_sum)
 
-        if(area_sum>= 1650):
+        if(area_sum>= 1000):
             ret.append(True)
         else:
             ret.append(False)
@@ -187,7 +191,7 @@ class ledApp:
         
 
         #color detector         values in BGR format
-        print(ret[0])
+        #print(ret[0])
         if(ret[0]== True):      #only if the status is on!
             rgb= self.blur[x-5:x+6, y-5:y+6]
             hsv= cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
@@ -210,11 +214,25 @@ class ledApp:
 
             #print(temp, total)
             temp= [i/total for i in temp]
-            print(temp)
+            #print(temp,)
             
             temphsv= colorsys.rgb_to_hsv(temp[2]/float(255), temp[1]/float(255), temp[0]/float(255))     #BGR format
             temphsv= [int(temphsv[0]*360), int(temphsv[1]*100), int(temphsv[2]*100)]
-            print(temphsv)
+            #print(temphsv)
+            temph= temphsv[0]
+            print(temph)
+            if temph<= 30 or temph> 330:
+                ret.append("red")
+            elif temph<= 90:
+                ret.append("yellow")
+            elif temph<= 170:
+                ret.append("green")
+            elif temph<= 270:
+                ret.append("blue")
+            else:
+                ret.append("magenta")
+
+
 
             #print(hsv)
             # for i in range(len(hsv)):
@@ -222,7 +240,6 @@ class ledApp:
             #         print hsv[i][j],
             #     print "\n"
 
-            ret.append("fff")
         else:
             ret.append(None)
         
@@ -261,7 +278,7 @@ class ImageProcessionApp:
             tracked = self.tracker.track(self.frame)
 
             #send to ledApp to know statuses of leds
-            self.ledModifier.starter(vis, self.tracker.all_circles_new)
+            self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames)
             # use the lists created in ledapp to senf to interpreter task!
 
             for tr in tracked:
@@ -274,12 +291,11 @@ class ImageProcessionApp:
             for i in range(len(self.tracker.all_circles_new)):
                 #print(new_center)
                 [x, y]= np.int32(self.tracker.all_circles_new[i][0])
-                cv2.circle(vis, (x, y), 8, (255,0,0), 2)
-                cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-13),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
+                tempR= self.tracker.all_cRadiuses[i]
+                cv2.circle(vis, (x, y), tempR, (255,0,0), 2)
+                cv2.putText(vis, self.tracker.all_cNames[i], (x-15, y-tempR-5),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
 
             
-
-
             cv2.imshow('plane', vis)
             ch = cv2.waitKey(1)
             if ch == ord(' '):
