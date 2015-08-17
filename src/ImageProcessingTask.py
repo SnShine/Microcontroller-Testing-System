@@ -14,6 +14,7 @@ Keys:
 '''
 
 import numpy as np
+import time
 import cv2
 import pickle
 import video
@@ -148,16 +149,20 @@ class ledApp:
         self.blur= None
         self.gray= None
         self.thresholded= None
+        self.names= None
+        self.radiuses= None
 
-    def starter(self, frame, circles, names):
+    def starter(self, frame, circles, names, radiuses):
         #start process with remaining functions
         #print(len(circles))
         self.frame= frame
         self.blur = cv2.GaussianBlur(self.frame,(5,5),0)
         self.gray= cv2.cvtColor(self.blur, cv2.COLOR_BGR2GRAY)
         #cv2.imshow("plane2", self.gray)
-        cv2.imshow("blur", self.blur)
+        #cv2.imshow("blur", self.blur)
 
+        self.radiuses= radiuses
+        self.names= names
         self.statuses= []
         self.colors= []
         self.frequencies= []
@@ -165,19 +170,20 @@ class ledApp:
         for i in range(len(circles)):
             print
             print("circle: "+ names[i])
-            temp_status, temp_color= self.get_status_color(circles[i][0])
+            temp_status, temp_color= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
             print(temp_status, temp_color)
 
 
 
-    def get_status_color(self, circle):
+    def get_status_color(self, circle, radius, name):
         ret= []
         x, y= circle
         y,x= int(x), int(y)
 
         #status detector
+        '''change with respectively to radius obtained'''
         th, self.thresholded= cv2.threshold(self.gray, 240, 255, cv2.THRESH_BINARY)
-        cv2.imshow("plane3", self.thresholded)
+        #cv2.imshow("plane3", self.thresholded)
 
         area_sum= sum(sum(self.thresholded[x-3:x+4, y-3:y+4])) #max= 7*255= 1785        #threshold value = 240
         #print(self.thresholded[x-3:x+4, y-3:y+4])
@@ -193,53 +199,43 @@ class ledApp:
         #color detector         values in BGR format
         #print(ret[0])
         if(ret[0]== True):      #only if the status is on!
-            rgb= self.blur[x-5:x+6, y-5:y+6]
-            hsv= cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
+            rgb_small= self.blur[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
+            threshold_small= self.thresholded[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
+            hsv_small= cv2.cvtColor(rgb_small, cv2.COLOR_BGR2HSV)
+            #cv2.imshow(name+ " rgb", rgb_small)
+            #cv2.imshow(name+ " threshold", threshold_small)
+            #cv2.imshow(name+ " hsv", hsv_small)
             
-            #print(self.thresholded[x-4:x+5, y-4:y+5])
-            #print(rgb)
-            
-            temp= [0,0,0]
-            total= 0
+            color_names= ["red", "yellow", "green", "cyan", "blue"]
+            color_pixels= [0, 0, 0, 0, 0]
 
-            for i in range(len(rgb)):
-                for j in range(len(rgb[i])):
-                    #print rgb[i][j],
-                    if min(rgb[i][j])>245:
-                        pass
+            for i in range(len(rgb_small)):
+                for j in range(len(rgb_small[0])):
+                    if threshold_small[i][j]== 255:
+                        rgb_small[i][j]= ([255, 255, 255])
+                        #print(hsv_small[i][j])
                     else:
-                        temp= [temp[k]+ rgb[i][j][k] for k in range(len(rgb[i][j]))]
-                        total+= 1
-                #print "\n"
+                        #change it to hsv, detect color, add to array,
+                        temp_h= hsv_small[i][j][0]
+                        if temp_h<= 15 or temp_h> 135:
+                            # red
+                            color_pixels[0]+= 1
+                        elif temp_h<= 45:
+                            # yellow
+                            color_pixels[1]+= 1
+                        elif temp_h<= 75:
+                            # green
+                            color_pixels[2]+= 1
+                        elif temp_h<= 105:
+                            # cyan
+                            color_pixels[3]+= 1
+                        elif temp_h<= 135:
+                            # blue
+                            color_pixels[4]+= 1
 
-            #print(temp, total)
-            temp= [i/total for i in temp]
-            #print(temp,)
-            
-            temphsv= colorsys.rgb_to_hsv(temp[2]/float(255), temp[1]/float(255), temp[0]/float(255))     #BGR format
-            temphsv= [int(temphsv[0]*360), int(temphsv[1]*100), int(temphsv[2]*100)]
-            #print(temphsv)
-            temph= temphsv[0]
-            print(temph)
-            if temph<= 30 or temph> 330:
-                ret.append("red")
-            elif temph<= 90:
-                ret.append("yellow")
-            elif temph<= 170:
-                ret.append("green")
-            elif temph<= 270:
-                ret.append("blue")
-            else:
-                ret.append("magenta")
+            ret.append(color_names[color_pixels.index(max(color_pixels))])
 
-
-
-            #print(hsv)
-            # for i in range(len(hsv)):
-            #     for j in range(len(hsv[i])):
-            #         print hsv[i][j],
-            #     print "\n"
-
+            cv2.imshow(name+ " rgb modified", rgb_small)
         else:
             ret.append(None)
         
@@ -253,6 +249,7 @@ class ImageProcessionApp:
         self.cap = video.create_capture(src)
         self.frame = None
         self.paused = False
+        self.fps= self.cap.get(5)
         self.file_name= file_name
         self.tracker = PlaneTracker()
         self.ledModifier= ledApp()
@@ -272,13 +269,15 @@ class ImageProcessionApp:
                 self.frame = frame.copy()
             
 
+            print
+            print("Another frame................")
             self.frame= cv2.resize(self.frame, (self.tracker.user_res[1], self.tracker.user_res[0]))
             vis = self.frame.copy()
             
             tracked = self.tracker.track(self.frame)
 
             #send to ledApp to know statuses of leds
-            self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames)
+            self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames, self.tracker.all_cRadiuses)
             # use the lists created in ledapp to senf to interpreter task!
 
             for tr in tracked:
