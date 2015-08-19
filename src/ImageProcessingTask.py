@@ -30,7 +30,7 @@ import colorsys
 import server
 import threading
 
-
+#DATA= None
 
 FLANN_INDEX_KDTREE = 1
 FLANN_INDEX_LSH    = 6
@@ -155,7 +155,8 @@ class ledApp:
     def __init__(self):
         #data of all the leds
         self.statuses= None     #False= off; True= on
-        self.colors= None
+        self.colors_name= None
+        self.colors_rgb= None
         self.frequencies= None
         self.frame= None
         self.blur= None
@@ -176,17 +177,19 @@ class ledApp:
         self.radiuses= radiuses
         self.names= names
         self.statuses= []
-        self.colors= []
+        self.colors_name= []
+        self.colors_rgb= []
         self.frequencies= []
 
         for i in range(len(circles)):
             #print
             #print("circle: "+ names[i])
-            temp_status, temp_color= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
+            temp_status, temp_color, temp_rgb= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
             #print(temp_status, temp_color)
             
             self.statuses.append(temp_status)
-            self.colors.append(temp_color)
+            self.colors_name.append(temp_color)
+            self.colors_rgb.append(temp_rgb)
 
 
 
@@ -249,9 +252,12 @@ class ledApp:
                             color_pixels[4]+= 1
 
             ret.append(color_names[color_pixels.index(max(color_pixels))])
+            ret.append(sum(sum(rgb_small)))
 
             #cv2.imshow(name+ " rgb modified", rgb_small)
         else:
+            # see if lists are empty and put previous values here when leds are off!
+            ret.append(None)
             ret.append(None)
         
         return ret
@@ -268,7 +274,7 @@ class ImageProcessionApp:
         self.file_name= file_name
         self.tracker = PlaneTracker()
         self.ledModifier= ledApp()
-
+        global DATA
         cv2.namedWindow('plane')
 
 
@@ -296,10 +302,14 @@ class ImageProcessionApp:
 
             # print(self.ledModifier.names)
             # print(self.ledModifier.statuses)
-            # print(self.ledModifier.colors)
+            # print(self.ledModifier.colors_name)
+            # print(self.ledModifier.colors_rgb)
             # print(self.ledModifier.frequencies)
 
             # use the lists created in ledapp to senf to interpreter task!
+            DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, self.ledModifier.colors_rgb, self.ledModifier.frequencies]
+            server.send_data(DATA)
+            #print(DATA)
 
             for tr in tracked:
                 #print(tr.quad)
@@ -325,6 +335,7 @@ class ImageProcessionApp:
                 self.paused = not self.paused
             if ch == 27:
                 break
+
 
 
 class myThread (threading.Thread):
