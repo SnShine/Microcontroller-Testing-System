@@ -27,6 +27,11 @@ import video
 from collections import namedtuple
 import colorsys
 
+import server
+import threading
+
+
+
 FLANN_INDEX_KDTREE = 1
 FLANN_INDEX_LSH    = 6
 flann_params= dict(algorithm = FLANN_INDEX_LSH,
@@ -175,7 +180,7 @@ class ledApp:
         self.frequencies= []
 
         for i in range(len(circles)):
-            print
+            #print
             #print("circle: "+ names[i])
             temp_status, temp_color= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
             #print(temp_status, temp_color)
@@ -279,8 +284,8 @@ class ImageProcessionApp:
                 self.frame = frame.copy()
             
 
-            print
-            print("Another frame................")
+            # print
+            # print("Another frame................")
             self.frame= cv2.resize(self.frame, (self.tracker.user_res[1], self.tracker.user_res[0]))
             vis = self.frame.copy()
             
@@ -288,10 +293,12 @@ class ImageProcessionApp:
 
             #send to ledApp to know statuses of leds
             self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames, self.tracker.all_cRadiuses)
-            print(self.ledModifier.names)
-            print(self.ledModifier.statuses)
-            print(self.ledModifier.colors)
-            print(self.ledModifier.frequencies)
+
+            # print(self.ledModifier.names)
+            # print(self.ledModifier.statuses)
+            # print(self.ledModifier.colors)
+            # print(self.ledModifier.frequencies)
+
             # use the lists created in ledapp to senf to interpreter task!
 
             for tr in tracked:
@@ -310,11 +317,32 @@ class ImageProcessionApp:
 
             
             cv2.imshow('plane', vis)
+            
+            #print("here1")
             ch = cv2.waitKey(1)
+            #print("here2")
             if ch == ord(' '):
                 self.paused = not self.paused
             if ch == 27:
                 break
+
+
+class myThread (threading.Thread):
+    def __init__(self, threadID, name):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+    def run(self):
+        print "Starting " + self.name
+        # Get lock to synchronize threads
+        #threadLock.acquire()
+        if self.name== "Image Processing":
+            ImageProcessionApp(file_name, video_src).run()
+        if self.name== "server":
+            server.run()
+        # Free lock to release next thread
+        #threadLock.release()
+
 
 
 if __name__ == '__main__':
@@ -331,5 +359,15 @@ if __name__ == '__main__':
         video_src = sys.argv[2]
     except: 
         video_src = 0
+
+
+    threadLock=threading.Lock()
+    threads= []
+
+    t1= myThread(2, "server")
+    #t2= threading.Thread(name= "Image Processing", target= ImageProcessionApp(file_name, video_src).run)
+    t2= myThread(1, "Image Processing")
+    #ImageProcessionApp(file_name, video_src).run()
     
-    ImageProcessionApp(file_name, video_src).run()
+    t1.start()
+    t2.start()

@@ -6,7 +6,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.73.218', 8604)
+    server_address = ('172.16.73.218', 8608)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -31,8 +31,9 @@ def talk_to_client(sock, connection):
                 connection.close()
                 sock.close()
                 return 0
+                
             else:
-                connection.sendall("haha success!")
+                connection.sendall("Please enter a recognized command!")
         else:
             print "Client disconnected the connection. Stopping the server..."
             connection.close()
@@ -44,11 +45,13 @@ def talk_to_client(sock, connection):
         sys.exit()
 
 
-if __name__== "__main__":
+def run():
     sock, connection= start_server()
 
     while True:
         ret= talk_to_client(sock, connection)
         if ret== 0:
             break
+
+#main()
         
