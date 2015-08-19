@@ -1,34 +1,54 @@
 import socket
 import sys
 
-# Create a TCP/IP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def start_server():
+    # Create a TCP/IP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-# Bind the socket to the port
-server_address = ('172.16.48.241', 8680)
-print "Starting server on", server_address
+    # Bind the socket to the port
+    server_address = ('172.16.73.218', 8604)
+    print "Starting server on", server_address, "..."
 
-sock.bind(server_address)
+    sock.bind(server_address)
 
-# Listen for incoming connections
-sock.listen(1)
+    # Listen for incoming connections
+    sock.listen(1)
 
-print("Waiting for connection...")
-connection, client_address = sock.accept()
-print "Connection from: ", client_address
+    print "Waiting for connection..."
+    connection, client_address = sock.accept()
+    print "Connection from: ", client_address
 
-while True:
+    return sock, connection
+
+def talk_to_client(sock, connection):
     try:
         data = connection.recv(64)
         print "Received data:", data
 
-        if data== "close all":
-            print("Closing connection and stopping server...")
+        if data:
+            if data== "close all":
+                print "Closing connection and stopping server..."
+                connection.close()
+                sock.close()
+                return 0
+            else:
+                connection.sendall("haha success!")
+        else:
+            print "Client disconnected the connection. Stopping the server..."
             connection.close()
             sock.close()
-            break
-        else:
-            connection.sendall("haha success!")
+            return 0         
     except:
-        print("Error has occured! (server)")
-        pass
+        print "Error has occured! (server)"
+        print sys.stderr
+        sys.exit()
+
+
+if __name__== "__main__":
+    sock, connection= start_server()
+
+    while True:
+        ret= talk_to_client(sock, connection)
+        if ret== 0:
+            break
+        
