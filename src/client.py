@@ -6,7 +6,7 @@ def start_client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = ('172.16.73.218', 8604)
+    server_address = ('172.16.73.218', 8608)
     print "Connecting to", server_address, "..."
 
     try:
@@ -42,11 +42,13 @@ def talk_to_server(sock):
         sys.exit()
 
 
-if __name__== "__main__":
+def main():
     sock= start_client()
 
     while True:
         ret= talk_to_server(sock)
         if ret== 0:
             break
+
+main()
         
