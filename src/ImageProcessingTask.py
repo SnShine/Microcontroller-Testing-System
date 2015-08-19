@@ -2,6 +2,12 @@
 Image Processing Task
 =====================
 
+Takes the object file created in Config task and tracks for the ROI in mentioned
+video. Tracks LEDs and calculates their status, color, blinking frequency as output.
+
+It sends this data to Interpreter task which runs on another computer in the same
+network via ethernet. 
+
 Usage:
         ImageProcessingTask.py [<saved/object/file> [<video_source>]]
 
@@ -61,6 +67,7 @@ class PlaneTracker:
         self.all_circles_new= []
 
     def load_data(self, file_name, data=None):
+        '''loads data from the pickle file'''
         try:
             input_file= open(file_name, "r")
             #print(file_name)
@@ -169,9 +176,12 @@ class ledApp:
 
         for i in range(len(circles)):
             print
-            print("circle: "+ names[i])
+            #print("circle: "+ names[i])
             temp_status, temp_color= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
-            print(temp_status, temp_color)
+            #print(temp_status, temp_color)
+            
+            self.statuses.append(temp_status)
+            self.colors.append(temp_color)
 
 
 
@@ -187,7 +197,7 @@ class ledApp:
 
         area_sum= sum(sum(self.thresholded[x-3:x+4, y-3:y+4])) #max= 7*255= 1785        #threshold value = 240
         #print(self.thresholded[x-3:x+4, y-3:y+4])
-        print(area_sum)
+        #print(area_sum)
 
         if(area_sum>= 1000):
             ret.append(True)
@@ -223,7 +233,7 @@ class ledApp:
                         elif temp_h<= 45:
                             # yellow
                             color_pixels[1]+= 1
-                        elif temp_h<= 75:
+                        elif temp_h<= 80:
                             # green
                             color_pixels[2]+= 1
                         elif temp_h<= 105:
@@ -235,7 +245,7 @@ class ledApp:
 
             ret.append(color_names[color_pixels.index(max(color_pixels))])
 
-            cv2.imshow(name+ " rgb modified", rgb_small)
+            #cv2.imshow(name+ " rgb modified", rgb_small)
         else:
             ret.append(None)
         
@@ -278,6 +288,10 @@ class ImageProcessionApp:
 
             #send to ledApp to know statuses of leds
             self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames, self.tracker.all_cRadiuses)
+            print(self.ledModifier.names)
+            print(self.ledModifier.statuses)
+            print(self.ledModifier.colors)
+            print(self.ledModifier.frequencies)
             # use the lists created in ledapp to senf to interpreter task!
 
             for tr in tracked:
