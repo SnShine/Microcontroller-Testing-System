@@ -6,7 +6,7 @@ def start_client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = ('172.16.48.241', 8601)
+    server_address = ('172.16.73.218', 8601)
     print "Connecting to", server_address, "..."
 
     try:

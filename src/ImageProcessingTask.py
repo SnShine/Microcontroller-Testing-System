@@ -256,7 +256,6 @@ class ledApp:
 
             #cv2.imshow(name+ " rgb modified", rgb_small)
         else:
-            # see if lists are empty and put previous values here when leds are off!
             ret.append(None)
             ret.append(None)
         
@@ -280,6 +279,8 @@ class ImageProcessionApp:
 
     def run(self):
         self.tracker.load_data(self.file_name)
+
+        DATA_OLD= None
 
         while True:
             playing = not self.paused
@@ -308,6 +309,16 @@ class ImageProcessionApp:
 
             # use the lists created in ledapp to senf to interpreter task!
             DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, self.ledModifier.colors_rgb, self.ledModifier.frequencies]
+            
+            # taking last known valuesof  color_name and color_rgb if they are None
+            if DATA_OLD!= None:
+                for x in range(2, 4):
+                    for y in range(len(DATA[x])):
+                        if DATA[x][y]== None:
+                            DATA[x][y]= DATA_OLD[x][y]
+
+            DATA_OLD= DATA
+
             server.send_data(DATA)
             #print(DATA)
 
