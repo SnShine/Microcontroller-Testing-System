@@ -18,7 +18,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.48.241', 8601)
+    server_address = ('172.16.73.218', 8601)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -109,10 +109,10 @@ def talk_to_client(sock, connection):
             connection.close()
             sock.close()
             return 0         
-    except:
-        print "Error has occured! (server)"
+    except Exception, e:
         print e
         print "Error: ", sys.exc_info()[0]
+        print "Error with server!"
         sys.exit()
 
 
