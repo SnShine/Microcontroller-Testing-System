@@ -1,12 +1,37 @@
+'''
+client
+======
+
+Recognized commands:
+        close all - stops server and client. Press Esc to close the window
+
+        LED:<name>:status - returns the status of the selected LED; On/Off
+        LED:<name>:color_name - return color name of the selected LED; red/yellow/green/cyan/blue
+        LED:<name>:color_rgb - returns color RGB values; R: 150 G: 60 B:190
+        LED:<name>:freqyency - returns blinking frequency of the selected LED; 1.2 Hz
+
+        LED:numbof - returns total number of LEDs; 5 LEDs
+        LED:list - returns names of all the marked LEDs
+
+        IMAGE:fps - returns frames per second of the current video; 27 fps
+
+        IMAGE:store:int - 
+        IMAGE:store:ext -
+
+----------------------------------------
+
+'''
+
 import socket
 import sys
+
 
 def start_client():
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = ('172.16.73.218', 8601)
+    server_address = ('172.16.73.218', 8602)
     print "Connecting to", server_address, "..."
 
     try:
@@ -33,8 +58,8 @@ def talk_to_server(sock):
             return 0
         
         # receive output
-        data= sock.recv(64)
-        print "Response from server:", data
+        response= sock.recv(128)
+        print "Response from server:", response
     except:
         print "Error has occured! (client)"
         print(sys.stderr)
@@ -43,6 +68,8 @@ def talk_to_server(sock):
 
 
 def main():
+    print __doc__
+    
     sock= start_client()
 
     while True:

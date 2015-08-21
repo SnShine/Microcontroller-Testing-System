@@ -1,10 +1,17 @@
-import socket
-import sys
 '''
+server
+======
+
 Structure of DATA from IP task:
 
 
+----------------------------------------
+
 '''
+
+import socket
+import sys
+
 
 def send_data(data):
     '''gets data from IP task'''
@@ -18,7 +25,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.73.218', 8601)
+    server_address = ('172.16.73.218', 8602)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -38,17 +45,18 @@ def parse_data(data):
     global COLOR_NAME
     global COLOR_RGB
     global FREQUENCY
+    global FPS
     
-    NAME, STATUS, COLOR_NAME, COLOR_RGB, FREQUENCY= DATA
+    NAME, STATUS, COLOR_NAME, COLOR_RGB, FREQUENCY, FPS= DATA
 
 def parse_command(command):
     a= command.split(":")
-    if len(a)== 3:
+    if len(a)== 2 or len(a)== 3:
         return a
     else:
         return None
     
-def find_answer(values):
+def LED_with_3(values):
     #print(values)
     if values[2]== "status":
         sta= STATUS[NAME.index(values[1])]
@@ -64,14 +72,27 @@ def find_answer(values):
     if values[2]== "frequency":
         return FREQUENCY[NAME.index(values[1])]
 
+def LED_with_2(values):
+    if values[1]== "numbof":
+        return str(len(NAME))+" LEDs"
+    else:
+        return ", ".join(NAME)
+
+def IMAGE_with_3(values):
+    return 0
+
+def IMAGE_with_2(values):
+    if values[1]== "fps":
+        return str(FPS)+ " fps"
 
 def talk_to_client(sock, connection):
     try:
-        command = connection.recv(64)
-        print
-        print "Received command:", command
-
-        if command:
+        command = connection.recv(128)
+        
+        if len(command)!= 0:
+            print
+            print "Received command:", command
+            
             if command== "close all":
                 print "Closing connection and stopping server..."
                 connection.close()
@@ -84,26 +105,69 @@ def talk_to_client(sock, connection):
                     print("Invalid command! Please check your command.")
                     connection.sendall("Invalid command! Please check your command.")
                 else:
-                    if values[0] not in ["LED"]:
+                    if values[0]== "LED":
+                        if len(values)== 3:
+                            if values[1] not in NAME:
+                                print("Please check the name of LED you have entered.")
+                                connection.sendall("Please check the name of LED you have entered.")
+                            elif values[2] not in ["status", "color_name", "color_rgb", "frequency"]:
+                                print("Please check the property of LED you have entered.")
+                                connection.sendall("Please check the property of LED you have entered.")
+                            else:
+                                answer= LED_with_3(values)
+                                if answer== None:
+                                    answer= "Haven't calculated the requested answer yet!"
+                                print "Response to client:", answer
+                                try:
+                                    connection.sendall(answer)
+                                except Exception, e:
+                                    print e
+                                    print "Error: ", sys.exc_info()[0]
+                                    connection.sendall("Error sending the answer from server to client!")
+                        elif len(values)== 2:
+                            if values[1] not in ["numbof", "list"]:
+                                print("Please check the property of LED_LIST you have entered.")
+                                connection.sendall("Please check the property of LED_LIST you have entered.")
+                            else:
+                                answer= LED_with_2(values)
+                                print "Response to client:", answer
+                                try:
+                                    connection.sendall(answer)
+                                except Exception, e:
+                                    print e
+                                    print "Error: ", sys.exc_info()[0]
+                                    connection.sendall("Error sending the answer from server to client!")
+                        else:
+                            print("Invalid number of LED specifications.")
+                            connection.sendall("Invalid number of LED specifications.")
+                    
+                    
+                    elif values[0]== "IMAGE":
+                        if len(values)== 3:
+                            pass
+                        elif len(values)== 2:
+                            if values[1] not in ["fps"]:
+                                print("Please check the property of IMAGE you have entered.")
+                                connection.sendall("Please check the property of IMAGE you have entered.")
+                            else:
+                                answer= IMAGE_with_2(values)
+                                print "Response to client:", answer
+                                try:
+                                    connection.sendall(answer)
+                                except Exception, e:
+                                    print e
+                                    print "Error: ", sys.exc_info()[0]
+                                    connection.sendall("Error sending the answer from server to client!")
+                        else:
+                            print("Invalid number of IMAGE specifications.")
+                            connection.sendall("Invalid number of IMAGE specifications.")
+
+                    
+                    else:
                         print("Please check the Element_Type you have entered.")
                         connection.sendall("Please check the Element_Type you have entered.")
-                    elif values[1] not in NAME:
-                        print("Please check the Element_Name you have entered.")
-                        connection.sendall("Please check the Element_Name you have entered.")
-                    elif values[2] not in ["status", "color_name", "color_rgb", "frequency"]:
-                        print("Please check the Element_Property you have entered.")
-                        connection.sendall("Please check the Element_Property you have entered.")
-                    else:
-                        answer= find_answer(values)
-                        #print(DATA)
-                        #final answer to send
-                        print "Response to client:", answer
-                        try:
-                            connection.sendall(answer)
-                        except Exception, e:
-                            print e
-                            print "Error: ", sys.exc_info()[0]
-                            connection.sendall("Error sending the answer from server to client!")
+                    
+                    
         else:
             print "Client disconnected the connection. Stopping the server..."
             connection.close()
@@ -117,6 +181,7 @@ def talk_to_client(sock, connection):
 
 
 def run():
+    print __doc__
     sock, connection= start_server()
 
     while True:
