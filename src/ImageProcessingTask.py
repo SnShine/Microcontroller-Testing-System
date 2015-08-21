@@ -15,7 +15,7 @@ Keys:
         <Space Bar> - Pause the video
         <Esc>       - Stop the program
 
-------------------------------------------------------------------------------------
+----------------------------------------
 
 '''
 
@@ -308,7 +308,8 @@ class ImageProcessionApp:
             # print(self.ledModifier.frequencies)
 
             # use the lists created in ledapp to senf to interpreter task!
-            DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, self.ledModifier.colors_rgb, self.ledModifier.frequencies]
+            DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, 
+                    self.ledModifier.colors_rgb, self.ledModifier.frequencies, self.fps]
             
             # taking last known valuesof  color_name and color_rgb if they are None
             if DATA_OLD!= None:
