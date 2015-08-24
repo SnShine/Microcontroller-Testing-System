@@ -3,20 +3,20 @@ client
 ======
 
 Recognized commands:
-        close all - stops server and client. Press Esc to close the window
+    close all - stops server and client. Press Esc to close the window
 
-        LED:<name>:status - returns the status of the selected LED; On/Off
-        LED:<name>:color_name - return color name of the selected LED; red/yellow/green/cyan/blue
-        LED:<name>:color_rgb - returns color RGB values; R: 150 G: 60 B:190
-        LED:<name>:freqyency - returns blinking frequency of the selected LED; 1.2 Hz
+    LED:<name>:status - returns the status of the selected LED; On/Off
+    LED:<name>:color_name - return color name of the selected LED; red/yellow/green/cyan/blue
+    LED:<name>:color_rgb - returns color RGB values; R: 150 G: 60 B:190
+    LED:<name>:freqyency - returns blinking frequency of the selected LED; 1.2 Hz
 
-        LED:numbof - returns total number of LEDs; 5 LEDs
-        LED:list - returns names of all the marked LEDs
+    LED:numbof - returns total number of LEDs; 5 LEDs
+    LED:list - returns names of all the marked LEDs
 
-        IMAGE:fps - returns frames per second of the current video; 27 fps
+    IMAGE:fps - returns frames per second of the current video; 27 fps
 
-        IMAGE:store:int - 
-        IMAGE:store:ext -
+    IMAGE:store:int - 
+    IMAGE:store:ext -
 
 ----------------------------------------
 
@@ -31,7 +31,7 @@ def start_client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = ('172.16.73.218', 8602)
+    server_address = ('172.16.48.241', 8600)
     print "Connecting to", server_address, "..."
 
     try:
@@ -44,6 +44,9 @@ def start_client():
     return sock
 
 def talk_to_server(sock):
+    '''
+    sends commands to server and displays response on the terminal
+    '''
     print "\nEnter your command:",
     user_command= raw_input()
     #print(user_command)
