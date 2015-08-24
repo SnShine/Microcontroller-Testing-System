@@ -9,11 +9,11 @@ It sends this data to Interpreter task which runs on another computer in the sam
 network via ethernet. 
 
 Usage:
-        ImageProcessingTask.py [<saved/object/file> [<video_source>]]
+    ImageProcessingTask.py [<saved/object/file> [<video_source>]]
 
 Keys:
-        <Space Bar> - Pause the video
-        <Esc>       - Stop the program
+    <Space Bar> - Pause the video
+    <Esc>       - Stop the program
 
 ----------------------------------------
 
@@ -80,6 +80,7 @@ class PlaneTracker:
             print("Unable to open the file- "+file_name+". Please re-run the program.")
         [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cRadiuses, self.all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
 
+        # deserializing the contents of 'indes' into feature points
         for i in range(len(all_rects)):
             index= all_index[i]
             descs= all_rects_descs[i]
@@ -99,6 +100,8 @@ class PlaneTracker:
     def track(self, frame):
         '''Returns a list of detected TrackedTarget objects'''
         self.frame_points, self.frame_descrs = self.detect_features(frame)
+
+        # see if no.of feature points is greater than our MIN_MATCH_COUNT
         if len(self.frame_points) < MIN_MATCH_COUNT:
             return []
         matches = self.matcher.knnMatch(self.frame_descrs, k = 2)
@@ -106,9 +109,11 @@ class PlaneTracker:
         if len(matches) < MIN_MATCH_COUNT:
             return []
         matches_by_id = [[] for _ in xrange(len(self.targets))]
+        
         for m in matches:
             matches_by_id[m.imgIdx].append(m)
         tracked = []
+        
         for imgIdx, matches in enumerate(matches_by_id):
             if len(matches) < MIN_MATCH_COUNT:
                 continue
@@ -122,6 +127,7 @@ class PlaneTracker:
                 continue
             p0, p1 = p0[status], p1[status]
 
+            # creating quad based on user specified ROI type
             if self.ROI_type== 0:
                 x0, y0, x1, y1 = target.rect
                 quad = np.float32([[x0, y0], [x1, y0], [x1, y1], [x0, y1]])
@@ -132,7 +138,7 @@ class PlaneTracker:
 
             quad = cv2.perspectiveTransform(quad.reshape(1, -1, 2), H).reshape(-1, 2)
 
-            #transforming saved led positions to new positions!
+            # transforming saved led positions to new positions based on new quad shape!
             self.all_circles_new= []
             for circleI in range(len(self.all_circles)):
                 new_point= cv2.perspectiveTransform(np.float32(self.all_circles[circleI]).reshape(1, -1, 2), H).reshape(-1,2)
@@ -181,6 +187,7 @@ class ledApp:
         self.colors_rgb= []
         self.frequencies= []
 
+        # detect status, frequency, color for every circle in each frame
         for i in range(len(circles)):
             #print
             #print("circle: "+ names[i])
@@ -194,6 +201,7 @@ class ledApp:
 
 
     def get_status_color(self, circle, radius, name):
+        '''detects status, color, frequency of an LED'''
         ret= []
         x, y= circle
         y,x= int(x), int(y)
@@ -207,6 +215,7 @@ class ledApp:
         #print(self.thresholded[x-3:x+4, y-3:y+4])
         #print(area_sum)
 
+        # status of LED is based on area sum of thresholded frame
         if(area_sum>= 1000):
             ret.append(True)
         else:
@@ -215,8 +224,11 @@ class ledApp:
         
 
         #color detector         values in BGR format
+
         #print(ret[0])
         if(ret[0]== True):      #only if the status is on!
+
+            # select small region with padding around user specified radius of circle
             rgb_small= self.blur[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
             threshold_small= self.thresholded[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
             hsv_small= cv2.cvtColor(rgb_small, cv2.COLOR_BGR2HSV)
@@ -224,9 +236,11 @@ class ledApp:
             #cv2.imshow(name+ " threshold", threshold_small)
             #cv2.imshow(name+ " hsv", hsv_small)
             
+            # all color categories
             color_names= ["red", "yellow", "green", "cyan", "blue"]
             color_pixels= [0, 0, 0, 0, 0]
 
+            # uses hsv value of a pixel to detect the color of LED
             for i in range(len(rgb_small)):
                 for j in range(len(rgb_small[0])):
                     if threshold_small[i][j]== 255:
@@ -255,14 +269,13 @@ class ledApp:
             ret.append(sum(sum(rgb_small)))
 
             #cv2.imshow(name+ " rgb modified", rgb_small)
+        # is status of LED is off, append None
         else:
             ret.append(None)
             ret.append(None)
         
         return ret
 
-    def get_frequency(self, circle):
-        return 0
 
 class ImageProcessionApp:
     def __init__(self, file_name, src):
@@ -307,7 +320,7 @@ class ImageProcessionApp:
             # print(self.ledModifier.colors_rgb)
             # print(self.ledModifier.frequencies)
 
-            # use the lists created in ledapp to senf to interpreter task!
+            # use the lists created in ledapp to send to interpreter/server task!
             DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, 
                     self.ledModifier.colors_rgb, self.ledModifier.frequencies, self.fps]
             
@@ -323,6 +336,7 @@ class ImageProcessionApp:
             server.send_data(DATA)
             #print(DATA)
 
+            # show tracked lines
             for tr in tracked:
                 #print(tr.quad)
                 cv2.polylines(vis, [np.int32(tr.quad)], True, (255, 255, 255), 2)
@@ -330,6 +344,7 @@ class ImageProcessionApp:
                 #     cv2.circle(vis, (x, y), 2, (255, 255, 255))
                 #print(tr.circles)
             
+            # show tracked circles
             for i in range(len(self.tracker.all_circles_new)):
                 #print(new_center)
                 [x, y]= np.int32(self.tracker.all_circles_new[i][0])
@@ -384,6 +399,7 @@ if __name__ == '__main__':
         video_src = 0
 
 
+    # start two threads - server thread and IP thread
     threadLock=threading.Lock()
     threads= []
 

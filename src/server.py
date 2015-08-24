@@ -25,7 +25,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.73.218', 8602)
+    server_address = ('172.16.48.241', 8600)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -57,7 +57,7 @@ def parse_command(command):
         return None
     
 def LED_with_3(values):
-    #print(values)
+    '''command about LED properties with three parameters'''
     if values[2]== "status":
         sta= STATUS[NAME.index(values[1])]
         if sta== True:
@@ -73,15 +73,18 @@ def LED_with_3(values):
         return FREQUENCY[NAME.index(values[1])]
 
 def LED_with_2(values):
+    '''command about LED properties with two parameters'''
     if values[1]== "numbof":
         return str(len(NAME))+" LEDs"
     else:
         return ", ".join(NAME)
 
 def IMAGE_with_3(values):
+    '''command about IMAGE properties with three parameters'''
     return 0
 
 def IMAGE_with_2(values):
+    '''command about IMAGE properties with two parameters'''
     if values[1]== "fps":
         return str(FPS)+ " fps"
 
@@ -93,6 +96,7 @@ def talk_to_client(sock, connection):
             print
             print "Received command:", command
             
+            # if 'close all' is received stop the server and exit
             if command== "close all":
                 print "Closing connection and stopping server..."
                 connection.close()
@@ -101,10 +105,12 @@ def talk_to_client(sock, connection):
 
             else:
                 values= parse_command(command)
+                # if not properly formatted, return 'invalid command' to client
                 if values== None:
                     print("Invalid command! Please check your command.")
                     connection.sendall("Invalid command! Please check your command.")
                 else:
+                    # if the command is about LED properties
                     if values[0]== "LED":
                         if len(values)== 3:
                             if values[1] not in NAME:
@@ -124,6 +130,7 @@ def talk_to_client(sock, connection):
                                     print e
                                     print "Error: ", sys.exc_info()[0]
                                     connection.sendall("Error sending the answer from server to client!")
+
                         elif len(values)== 2:
                             if values[1] not in ["numbof", "list"]:
                                 print("Please check the property of LED_LIST you have entered.")
@@ -141,7 +148,7 @@ def talk_to_client(sock, connection):
                             print("Invalid number of LED specifications.")
                             connection.sendall("Invalid number of LED specifications.")
                     
-                    
+                    # if the command is about IMAGE properties
                     elif values[0]== "IMAGE":
                         if len(values)== 3:
                             pass
@@ -162,13 +169,15 @@ def talk_to_client(sock, connection):
                             print("Invalid number of IMAGE specifications.")
                             connection.sendall("Invalid number of IMAGE specifications.")
 
-                    
+                    # ifcommand doesn't belong to any of these categories
                     else:
                         print("Please check the Element_Type you have entered.")
                         connection.sendall("Please check the Element_Type you have entered.")
                     
                     
         else:
+            # if client got disconnected from server 
+            # press CTRL+c in client to disconnect!
             print "Client disconnected the connection. Stopping the server..."
             connection.close()
             sock.close()
