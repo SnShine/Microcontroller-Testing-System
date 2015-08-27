@@ -236,24 +236,6 @@ class FeatureDetector:
         self.detector = cv2.ORB( nfeatures = 1000)
         self.callback= callback
 
-    # def is_point_inside(self, r1, r2, r3, r4, r):       #useless fnction!
-    #     #r1r2r4
-    #     print(r1,r2,r3,r4,r4)
-    #     alpha= float((r2[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r2[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
-    #     beta= float((r4[1] - r1[1])*(r[0] - r4[0]) + (r1[0] - r4[0])*(r[1] - r4[1])) / ((r2[1] - r4[1])*(r1[0] - r4[0]) + (r4[0] - r2[0])*(r1[1] - r4[1]))
-    #     gamma= 1- alpha- beta
-    #     if alpha >= 0 and beta >= 0 and gamma >= 0:
-    #         #print(r1,r2,r3,r4,r, "dfadfs")
-    #         return True
-    #     #r2r3r4
-    #     alpha= float((r3[1] - r4[1])*(r[0] - r4[0]) + (r4[0] - r3[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
-    #     beta= float((r4[1] - r2[1])*(r[0] - r4[0]) + (r2[0] - r4[0])*(r[1] - r4[1])) / ((r3[1] - r4[1])*(r2[0] - r4[0]) + (r4[0] - r3[0])*(r2[1] - r4[1]))
-    #     gamma= 1- alpha- beta
-    #     if alpha >= 0 and beta >= 0 and gamma >= 0:
-    #         #print(r1,r2,r3,r4,r, "asdfasdf")
-    #         return True
-    #     return False
-
     def extract_features(self, image, ROIs, circles, user_res, ROI_type, data=None):
         '''
         extract features in a particular frame marked with ROI and LEDs
