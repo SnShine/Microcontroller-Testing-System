@@ -25,7 +25,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.48.241', 8600)
+    server_address = ('172.16.73.218', 8600)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)

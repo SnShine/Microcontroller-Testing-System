@@ -229,11 +229,18 @@ class ledApp:
         if(ret[0]== True):      #only if the status is on!
 
             # select small region with padding around user specified radius of circle
-            rgb_small= self.blur[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
-            threshold_small= self.thresholded[x-radius-2:x+radius+3, y-radius-2:y+radius+3]
+            rgb_small= self.blur[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
+            gray_small= self.gray[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
+            threshold_small= self.thresholded[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
             hsv_small= cv2.cvtColor(rgb_small, cv2.COLOR_BGR2HSV)
-            #cv2.imshow(name+ " rgb", rgb_small)
-            #cv2.imshow(name+ " threshold", threshold_small)
+
+            threshold1_small= np.array(list(gray_small))
+            
+            
+            cv2.imshow(name+ " rgb", rgb_small)
+            cv2.imshow(name+ " gray", gray_small)
+            cv2.imshow(name+ " threshold", threshold_small)
+            
             #cv2.imshow(name+ " hsv", hsv_small)
             
             # all color categories
@@ -243,7 +250,15 @@ class ledApp:
             # uses hsv value of a pixel to detect the color of LED
             for i in range(len(rgb_small)):
                 for j in range(len(rgb_small[0])):
-                    if threshold_small[i][j]== 255:
+                    
+                    # take pixels within this range into consideration when detecting color of LED
+                    if gray_small[i][j]<= 240 and gray_small[i][j]>= 180:
+                        threshold1_small[i][j]= 255
+                    else:
+                        threshold1_small[i][j]= 0
+
+                    # excluding pixels with high brightness and low brightness
+                    if threshold_small[i][j]== 255 or threshold1_small[i][j]== 0:
                         rgb_small[i][j]= ([255, 255, 255])
                         #print(hsv_small[i][j])
                     else:
@@ -252,7 +267,7 @@ class ledApp:
                         if temp_h<= 15 or temp_h> 135:
                             # red
                             color_pixels[0]+= 1
-                        elif temp_h<= 45:
+                        elif temp_h<= 35:
                             # yellow
                             color_pixels[1]+= 1
                         elif temp_h<= 80:
@@ -268,7 +283,9 @@ class ledApp:
             ret.append(color_names[color_pixels.index(max(color_pixels))])
             ret.append(sum(sum(rgb_small)))
 
-            #cv2.imshow(name+ " rgb modified", rgb_small)
+            cv2.imshow(name+ " rgb modified", rgb_small)
+            cv2.imshow(name+ " threshold1", threshold1_small)
+        
         # is status of LED is off, append None
         else:
             ret.append(None)
