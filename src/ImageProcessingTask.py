@@ -161,17 +161,20 @@ class ledApp:
     def __init__(self):
         #data of all the leds
         self.statuses= None     #False= off; True= on
+        self.max_leds= 10
         self.colors_name= None
         self.colors_rgb= None
-        self.frequencies= None
+        self.frequencies= [-1 for i in range(self.max_leds)]
         self.frame= None
         self.blur= None
         self.gray= None
         self.thresholded= None
         self.names= None
         self.radiuses= None
+        self.timeStamps= [[None, None] for i in range(self.max_leds)]
+        self.flag_first= [1 for i in range(self.max_leds)]
 
-    def starter(self, frame, circles, names, radiuses):
+    def starter(self, frame, circles, names, radiuses, timeStamp):
         #start process with remaining functions
         #print(len(circles))
         self.frame= frame
@@ -182,16 +185,18 @@ class ledApp:
 
         self.radiuses= radiuses
         self.names= names
+
         self.statuses= []
         self.colors_name= []
         self.colors_rgb= []
-        self.frequencies= []
 
+        # print(self.frequencies)
+        # print(self.timeStamps)
         # detect status, frequency, color for every circle in each frame
         for i in range(len(circles)):
             #print
             #print("circle: "+ names[i])
-            temp_status, temp_color, temp_rgb= self.get_status_color(circles[i][0], self.radiuses[i], self.names[i])
+            temp_status, temp_color, temp_rgb= self.get_status_color_freq(circles[i][0], self.radiuses[i], self.names[i], timeStamp)
             #print(temp_status, temp_color)
             
             self.statuses.append(temp_status)
@@ -200,7 +205,7 @@ class ledApp:
 
 
 
-    def get_status_color(self, circle, radius, name):
+    def get_status_color_freq(self, circle, radius, name, timeStamp):
         '''detects status, color, frequency of an LED'''
         ret= []
         x, y= circle
@@ -222,13 +227,28 @@ class ledApp:
             ret.append(False)
 
         
-
+        circle_index= self.names.index(name)
         #color detector         values in BGR format
 
-        #print(ret[0])
+        #print(ret[0], name)
         if(ret[0]== True):      #only if the status is on!
 
             # select small region with padding around user specified radius of circle
+            if self.flag_first[circle_index]== 1:
+                # print(name+ " switched on at "+ str(timeStamp))
+                # print(name + " first switched on position "+ str(self.timeStamps[circle_index][0]))
+                # print(name+ " last switched off position "+ str(self.timeStamps[circle_index][1]))
+                
+                if self.timeStamps[circle_index][0]!= None and self.timeStamps[circle_index][1]!= None:
+                    self.frequencies[circle_index]= 1000/abs(self.timeStamps[circle_index][1]- self.timeStamps[circle_index][0])
+                    #print(self.frequencies[circle_index])
+                elif self.timeStamps[circle_index][0]== None:
+                    self.frequencies[circle_index]= -2 # hasn't switched off yet!
+
+                self.timeStamps[circle_index][0]= timeStamp
+                self.flag_first[circle_index]= 0
+
+            
             rgb_small= self.blur[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
             gray_small= self.gray[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
             threshold_small= self.thresholded[x-radius-3:x+radius+4, y-radius-3:y+radius+4]
@@ -237,37 +257,40 @@ class ledApp:
             threshold1_small= np.array(list(gray_small))
             
             
-            cv2.imshow(name+ " rgb", rgb_small)
-            cv2.imshow(name+ " gray", gray_small)
-            cv2.imshow(name+ " threshold", threshold_small)
+            #cv2.imshow(name+ " rgb", rgb_small)
+            #cv2.imshow(name+ " gray", gray_small)
+            #cv2.imshow(name+ " threshold", threshold_small)
             
             #cv2.imshow(name+ " hsv", hsv_small)
             
             # all color categories
-            color_names= ["red", "yellow", "green", "cyan", "blue"]
-            color_pixels= [0, 0, 0, 0, 0]
+            color_names= ["orange", "yellow", "green", "cyan", "blue", "red"]
+            color_pixels= [0, 0, 0, 0, 0, 0]
 
             # uses hsv value of a pixel to detect the color of LED
             for i in range(len(rgb_small)):
                 for j in range(len(rgb_small[0])):
                     
                     # take pixels within this range into consideration when detecting color of LED
-                    if gray_small[i][j]<= 240 and gray_small[i][j]>= 180:
+                    if gray_small[i][j]<= 240 and gray_small[i][j]>= 150:
                         threshold1_small[i][j]= 255
                     else:
                         threshold1_small[i][j]= 0
 
-                    # excluding pixels with high brightness and low brightness
+                    # excluding pixels with high brightness
+                    # and excluding pixels with high brightness and low brightness
+
                     if threshold_small[i][j]== 255 or threshold1_small[i][j]== 0:
+                    #if threshold_small[i][j]== 255:
                         rgb_small[i][j]= ([255, 255, 255])
                         #print(hsv_small[i][j])
                     else:
                         #change it to hsv, detect color, add to array,
                         temp_h= hsv_small[i][j][0]
-                        if temp_h<= 15 or temp_h> 135:
-                            # red
+                        if temp_h<= 20:
+                            # orange
                             color_pixels[0]+= 1
-                        elif temp_h<= 35:
+                        elif temp_h<= 38:
                             # yellow
                             color_pixels[1]+= 1
                         elif temp_h<= 80:
@@ -279,15 +302,21 @@ class ledApp:
                         elif temp_h<= 135:
                             # blue
                             color_pixels[4]+= 1
+                        elif temp_h> 135:
+                            # red
+                            color_pixels[5]+= 1
 
             ret.append(color_names[color_pixels.index(max(color_pixels))])
             ret.append(sum(sum(rgb_small)))
+            #print(ret[-1], name)
 
-            cv2.imshow(name+ " rgb modified", rgb_small)
-            cv2.imshow(name+ " threshold1", threshold1_small)
+            #cv2.imshow(name+ " rgb modified", rgb_small)
+            #cv2.imshow(name+ " threshold1", threshold1_small)
         
         # is status of LED is off, append None
         else:
+            self.flag_first[circle_index]= 1
+            self.timeStamps[circle_index][1]= timeStamp
             ret.append(None)
             ret.append(None)
         
@@ -329,7 +358,8 @@ class ImageProcessionApp:
             tracked = self.tracker.track(self.frame)
 
             #send to ledApp to know statuses of leds
-            self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames, self.tracker.all_cRadiuses)
+            timeStamp= self.cap.get(0)
+            self.ledModifier.starter(vis, self.tracker.all_circles_new, self.tracker.all_cNames, self.tracker.all_cRadiuses, timeStamp)
 
             # print(self.ledModifier.names)
             # print(self.ledModifier.statuses)
@@ -341,7 +371,7 @@ class ImageProcessionApp:
             DATA= [self.ledModifier.names, self.ledModifier.statuses, self.ledModifier.colors_name, 
                     self.ledModifier.colors_rgb, self.ledModifier.frequencies, self.fps]
             
-            # taking last known valuesof  color_name and color_rgb if they are None
+            # taking last known values of  color_name and color_rgb if they are None
             if DATA_OLD!= None:
                 for x in range(2, 4):
                     for y in range(len(DATA[x])):
@@ -390,13 +420,13 @@ class myThread (threading.Thread):
     def run(self):
         print "Starting " + self.name
         # Get lock to synchronize threads
-        #threadLock.acquire()
+        # threadLock.acquire()
         if self.name== "Image Processing":
             ImageProcessionApp(file_name, video_src).run()
         if self.name== "server":
             server.run()
         # Free lock to release next thread
-        #threadLock.release()
+        # threadLock.release()
 
 
 
