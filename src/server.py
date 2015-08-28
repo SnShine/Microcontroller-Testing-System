@@ -25,7 +25,7 @@ def start_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.73.218', 8600)
+    server_address = ('172.16.73.218', 8606)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -70,7 +70,12 @@ def LED_with_3(values):
         rgb= COLOR_RGB[NAME.index(values[1])]
         return "R: "+ str(rgb[2])+ " G: "+ str(rgb[1])+ " B: "+ str(rgb[0])
     if values[2]== "frequency":
-        return FREQUENCY[NAME.index(values[1])]
+        if FREQUENCY[NAME.index(values[1])]== -1:
+            return "The requensted LED hasn't switched on yet!"
+        elif FREQUENCY[NAME.index(values[1])]== -2:
+            return "The requested LED hasn't switched off yet!"
+        else:
+            return "{0:.2f}".format(FREQUENCY[NAME.index(values[1])])+ " Hz"
 
 def LED_with_2(values):
     '''command about LED properties with two parameters'''
