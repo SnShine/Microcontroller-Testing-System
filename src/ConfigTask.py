@@ -415,6 +415,7 @@ if __name__ == '__main__':
         video_src = sys.argv[1]
     except: 
         video_src = 0
+        
     got_ans1, got_ans2= False, False
 
     print("Prefered resolution of the video:\nEnter two space seperated integers like '720 480' without quotes: ")
