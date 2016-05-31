@@ -5,7 +5,7 @@ Configuration Task
 Takes a video as input and generates / saves to disk an object file as output which contains
 all the configuration information.
 
-This configuration and features are used in the next task, ImageProcessingTask to track 
+This configuration and features are used in the next task, ImageProcessingTask to track
 the microcontroller and detect LEDs
 
 Usage:
@@ -38,7 +38,7 @@ class ROIselector:
         self.drag_start = None
         self.drag_rect = None
         self.dragging_poly= None
-        
+
         self.rectangles= []
         self.circles= []
         self.cNames= []
@@ -51,12 +51,12 @@ class ROIselector:
     def poly_circ(self, event, x, y, flags, param):
         '''
         mouse callback function when user specified to use polygon as ROI
-        saves polygon's vertices and circles' names and radiuses 
+        saves polygon's vertices and circles' names and radiuses
         '''
         x, y= np.int16([x, y])
         start_point= []
         #end_point= []
-        
+
         # double click event to create LEDs
         if event== cv2.EVENT_LBUTTONDBLCLK:
             x, y = np.int16([x, y])
@@ -71,7 +71,7 @@ class ROIselector:
             print("Added circle centered at ("+str(x)+","+str(y)+") as '"+tempName+"' to the dataBase")
 
         #print(self.polygon)
-        
+
         # capturing cursor position while mouse is moving
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.dragging_poly:
@@ -91,8 +91,8 @@ class ROIselector:
             else:
                 self.polygon.append(start_point)
                 #print("start point appended")
-        
-        # capture left button up event to save the line coordinates to polygon 
+
+        # capture left button up event to save the line coordinates to polygon
         elif event== cv2.EVENT_LBUTTONUP:
                 self.dragging_poly= None
                 end_point= [x, y]
@@ -101,7 +101,7 @@ class ROIselector:
                 # length of line shouldn't be less than 10 pixels values
                 # added to not include a new line when we double clicked to select LED
                 if not (self.polygon[-1][0]-10<= end_point[0]<= self.polygon[-1][0]+10 and self.polygon[-1][1]-10<= end_point[1]<= self.polygon[-1][1]+10):
-                    
+
                     # if last end point is around first point, complete the polygon and add the polygon to set of polygons
                     if self.polygon[0][0]- 10<= end_point[0]<= self.polygon[0][0]+ 10 and self.polygon[0][1]-10<= end_point[1]<= self.polygon[0][1]+10 and len(self.polygon)>= 3:
                         self.polygons.append(self.polygon)
@@ -123,7 +123,7 @@ class ROIselector:
     def rect_circ(self, event, x, y, flags, param):
         '''
         mouse callback function when user specified to use rectangle as ROI
-        saves rectangle's vertices and circles' names and radiuses 
+        saves rectangle's vertices and circles' names and radiuses
         '''
         x, y = np.int16([x, y]) # BUG
         #ch = cv2.waitKey(1)
@@ -178,7 +178,7 @@ class ROIselector:
                 tempR= self.cRadiuses[i]
                 cv2.circle(vis, (x, y), tempR, (255,0,0), 2)
                 cv2.putText(vis, self.cNames[i], (x-15, y-tempR-5),  cv2.FONT_HERSHEY_PLAIN, 1.0, (25,0,225), 2)
-            
+
             # draw polygons saved in the 'polygons' list giving a polygon as input
             for polygonx in self.polygons:
                 self.draw_polygon(vis, polygonx)
@@ -186,7 +186,7 @@ class ROIselector:
             # draw lines of incomplete polygon while not drawing a new line
             for i in range(len(self.polygon)- 1):
                     self.draw_line(vis, self.polygon[i], self.polygon[i+1])
-            
+
             # draw lines of incomplete polygon while drawing a new line
             if self.dragging_poly:
                 #print(self.polygon, self.dragging_poly)
@@ -295,14 +295,14 @@ class FeatureDetector:
                         descs.append(desc)
 
                 all_ROIs_points.append(points)
-                all_ROIs_descs.append(descs) 
+                all_ROIs_descs.append(descs)
 
             # all_polys_to_rects or all_polys_new
             # all_polys_to_rects - modified polygons into rectangles
             # all_polys_new - polygons with only four sides
 
             # sending the data to callback function
-            self.callback(all_ROIs_points, all_ROIs_descs, all_polys_new, all_circles, user_res)   
+            self.callback(all_ROIs_points, all_ROIs_descs, all_polys_new, all_circles, user_res)
 
 
     def detect_features(self, frame):
@@ -335,12 +335,12 @@ class ConfigApp:
                 self.frame = frame.copy()
 
             #need to select one of the following three frame resolutions
-            
+
             ratio= self.frame.shape[1]/float(self.frame.shape[0])
             self.frame= cv2.resize(self.frame, (int(user_x), int(user_x/ratio)))
             #self.frame= cv2.resize(self.frame, (int(user_x), int(user_y)))
             #self.frame= cv2.resize(self.frame, (int(user_y*ratio), int(user_y)))
-            
+
             #print(self.frame.shape)
             user_res= self.frame.shape
             vis = self.frame.copy()
@@ -365,7 +365,7 @@ class ConfigApp:
                 # save to .obj file
                 # implements two main functions depends of user specified ROI type
                 if self.ROI_type== 0:
-                    self.feat_det.extract_features(self.frame, self.rect_sel.rectangles, self.rect_sel.circles, user_res, self.ROI_type)  
+                    self.feat_det.extract_features(self.frame, self.rect_sel.rectangles, self.rect_sel.circles, user_res, self.ROI_type)
                 elif self.ROI_type== 1:
                     self.feat_det.extract_features(self.frame, self.rect_sel.polygons, self.rect_sel.circles, user_res, self.ROI_type)
 
@@ -411,15 +411,15 @@ if __name__ == '__main__':
     import sys
 
     # take a video source from command line arguments
-    try: 
+    try:
         video_src = sys.argv[1]
-    except: 
+    except:
         video_src = 0
-        
+
     got_ans1, got_ans2= False, False
 
     print("Prefered resolution of the video:\nEnter two space seperated integers like '720 480' without quotes: ")
-    
+
     # ask for resolution of video selected
     try:
         a= raw_input()
@@ -428,7 +428,7 @@ if __name__ == '__main__':
         got_ans1= True
     except:
         print("Please check the entered value and re-run the program.")
-    
+
     print("Prefered ROI type:\nEnter a word- rectangle or polygon: ")
 
     # ask user for the prefered ROI type
@@ -445,9 +445,10 @@ if __name__ == '__main__':
             print("Please check the entered value and re-run the program.")
     except:
         print("Please check the entered value and re-run the program.")
-        
+
     if got_ans1 and got_ans2:
+        print(video_src)
         ConfigApp(video_src, ROI_type).run(user_x, user_y)
     else:
-        print("Re run the program")
+        print("Re-run the program")
         sys.exit()
