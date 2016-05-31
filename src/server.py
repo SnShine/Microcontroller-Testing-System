@@ -19,13 +19,13 @@ def send_data(data):
     DATA= data
     parse_data(DATA)
 
- 
+
 def start_server():
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to the port
-    server_address = ('172.16.73.218', 8606)
+    server_address = ('192.168.0.103', 8606)
     print "Starting server on", server_address, "..."
 
     sock.bind(server_address)
@@ -46,7 +46,7 @@ def parse_data(data):
     global COLOR_RGB
     global FREQUENCY
     global FPS
-    
+
     NAME, STATUS, COLOR_NAME, COLOR_RGB, FREQUENCY, FPS= DATA
 
 def parse_command(command):
@@ -55,7 +55,7 @@ def parse_command(command):
         return a
     else:
         return None
-    
+
 def LED_with_3(values):
     '''command about LED properties with three parameters'''
     if values[2]== "status":
@@ -96,11 +96,11 @@ def IMAGE_with_2(values):
 def talk_to_client(sock, connection):
     try:
         command = connection.recv(128)
-        
+
         if len(command)!= 0:
             print
             print "Received command:", command
-            
+
             # if 'close all' is received stop the server and exit
             if command== "close all":
                 print "Closing connection and stopping server..."
@@ -152,7 +152,7 @@ def talk_to_client(sock, connection):
                         else:
                             print("Invalid number of LED specifications.")
                             connection.sendall("Invalid number of LED specifications.")
-                    
+
                     # if the command is about IMAGE properties
                     elif values[0]== "IMAGE":
                         if len(values)== 3:
@@ -178,15 +178,15 @@ def talk_to_client(sock, connection):
                     else:
                         print("Please check the Element_Type you have entered.")
                         connection.sendall("Please check the Element_Type you have entered.")
-                    
-                    
+
+
         else:
-            # if client got disconnected from server 
+            # if client got disconnected from server
             # press CTRL+c in client to disconnect!
             print "Client disconnected the connection. Stopping the server..."
             connection.close()
             sock.close()
-            return 0         
+            return 0
     except Exception, e:
         print e
         print "Error: ", sys.exc_info()[0]
@@ -204,4 +204,4 @@ def run():
             break
 
 #main()
-        
+

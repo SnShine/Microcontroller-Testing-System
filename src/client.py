@@ -15,7 +15,7 @@ Recognized commands:
 
     IMAGE:fps - returns frames per second of the current video; 27 fps
 
-    IMAGE:store:int - 
+    IMAGE:store:int -
     IMAGE:store:ext -
 
 ----------------------------------------
@@ -31,7 +31,7 @@ def start_client():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
-    server_address = ('172.16.73.218', 8606)
+    server_address = ('192.168.0.103', 8606)
     print "Connecting to", server_address, "..."
 
     try:
@@ -59,7 +59,7 @@ def talk_to_server(sock):
             print "Closing connection and stopping server!"
             sock.close()
             return 0
-        
+
         # receive output
         response= sock.recv(128)
         print "Response from server:", response
@@ -72,7 +72,7 @@ def talk_to_server(sock):
 
 def main():
     print __doc__
-    
+
     sock= start_client()
 
     while True:
@@ -81,4 +81,4 @@ def main():
             break
 
 main()
-        
+
