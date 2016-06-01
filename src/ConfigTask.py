@@ -23,7 +23,7 @@ Keys:
 
 import numpy as np
 import cv2
-import pickle
+import cPickle
 import video
 from collections import namedtuple
 # import common
@@ -360,7 +360,7 @@ class ConfigApp:
                 self.rect_sel.cNames= []
                 self.rect_sel.cRadiuses= []
                 print("Cleared all marked Rectangles/Polygons & Circles from dataBase")
-            # if pressed 's' save the contents of the frame to pickle file
+            # if pressed 's' save the contents of the frame to cPickle file
             if ch == ord('s'):
                 # save to .obj file
                 # implements two main functions depends of user specified ROI type
@@ -374,7 +374,7 @@ class ConfigApp:
 
     def save_data(self, all_ROIs_points, all_ROIs_descs, all_modified_ROIs, all_circles, user_res):
         '''
-        save the data to the pickle file
+        save the data to the cPickle file
         Contents of the data file:
             all_index - serialized version of feature points
             all_ROIs_descs - feature descriptors
@@ -392,7 +392,7 @@ class ConfigApp:
         #print(type(points), type(descs), type(rect))
         all_index= []
 
-        # we couldn't pickle feature points directly
+        # we couldn't cPickle feature points directly
         # so we serialize it into a python array and deserialize when reading the config file in IP task
         for points in all_ROIs_points:
 
@@ -402,7 +402,7 @@ class ConfigApp:
                 index.append(temp)
             all_index.append(index)
 
-        pickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, [all_circles, self.rect_sel.cRadiuses, self.rect_sel.cNames], user_res, self.ROI_type], file_object)
+        cPickle.dump([all_index, all_ROIs_descs, all_modified_ROIs, [all_circles, self.rect_sel.cRadiuses, self.rect_sel.cNames], user_res, self.ROI_type], file_object)
         file_object.close()
         print("Successfully saved the whole dataBase to 'outputFile.p'")
 
