@@ -22,7 +22,7 @@ Keys:
 import numpy as np
 import time
 import cv2
-import pickle
+import cPickle
 import video
 from collections import namedtuple
 import colorsys
@@ -72,13 +72,13 @@ class PlaneTracker:
         self.all_circles_new= []
 
     def load_data(self, file_name, data=None):
-        '''loads data from the pickle file'''
+        '''loads data from the cPickle file'''
         try:
             input_file= open(file_name, "r")
             #print(file_name)
         except:
             print("Unable to open the file- "+file_name+". Please re-run the program.")
-        [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cRadiuses, self.all_cNames], self.user_res, self.ROI_type]= pickle.load(input_file)
+        [all_index, all_rects_descs, all_rects, [self.all_circles, self.all_cRadiuses, self.all_cNames], self.user_res, self.ROI_type]= cPickle.load(input_file)
 
         # deserializing the contents of 'indes' into feature points
         for i in range(len(all_rects)):
